@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoinEarner Pro - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* Glass effect for admin panel */
+        .glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-input {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .dark .glass {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .dark .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+        }
+        
+        .dark .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+        
+        .admin-card {
+            transition: all 0.3s ease;
+        }
+        
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+        }
+        
+        .modal-content {
+            max-width: 500px;
+            width: 90%;
+            margin: 1rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .hidden { display: none !important; }
+        
+        .button-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+            position: relative;
+        }
+        
+        .button-disabled::after {
+            content: '⏱️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            z-index: 1;
+        }
+        
+        .notification-dot {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 12px;
+            height: 12px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+            animation: notificationBounce 1s infinite;
+        }
+        
+        @keyframes notificationBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .search-input {
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        
+        .user-row {
+            transition: all 0.2s ease;
+        }
+        
+        .user-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-row.selected {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .verified {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .unverified {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+        
+        .stats-card {
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="gradient-bg text-white overflow-x-hidden">
+    <!-- Audio elements -->
+    <audio id="coinSound" preload="auto">
+        <source src="https://github.com/MustakimRidoyMR/MustakimRidoyMR.github.io/raw/refs/heads/main/Audio/Sounds_cha-ching-7053.mp3" type="audio/wav/mp3">
+    </audio>
+    <audio id="successSound" preload="auto">
+        <source src="https://github.com/MustakimRidoyMR/MustakimRidoyMR.github.io/raw/refs/heads/main/Audio/success.mp3" type="audio/wav/mp3">
+    </audio>
+    <audio id="errorSound" preload="auto">
+        <source src="https://github.com/MustakimRidoyMR/MustakimRidoyMR.github.io/raw/refs/heads/main/Audio/negative.mp3" type="audio/wav/mp3">
+    </audio>
+    <!-- Admin Registration Modal -->
+    <div class="modal-overlay" id="adminRegistrationModal">
+        <div class="modal-content glass rounded-2xl p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-user-shield text-blue-400 mr-2"></i>
+                    Admin Registration
+                </h2>
+                <button onclick="hideAdminModal('adminRegistrationModal')" class="text-white/60 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="adminRegistrationForm" class="space-y-4">
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Full Name</label>
+                    <input type="text" id="adminName" required minlength="2" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your full name">
+                </div>
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Email Address</label>
+                    <input type="email" id="adminEmail" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your email">
+                </div>
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Password</label>
+                    <input type="password" id="adminPassword" required minlength="8" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Create a secure password">
+                </div>
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Admin Code</label>
+                    <input type="text" id="adminCode" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter admin registration code">
+                    <small class="text-white/60 text-xs mt-1">Contact system administrator for the admin code</small>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold transition-all">
+                        Register as Admin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay hidden" id="adminLoginModal">
+        <div class="modal-content glass rounded-2xl p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-lock text-green-400 mr-2"></i>
+                    Admin Login
+                </h2>
+                <button onclick="hideAdminModal('adminLoginModal')" class="text-white/60 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="adminLoginForm" class="space-y-4">
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Email Address</label>
+                    <input type="email" id="loginAdminEmail" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your email">
+                </div>
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Password</label>
+                    <input type="password" id="loginAdminPassword" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your password">
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="adminRememberMe" class="mr-2 w-4 h-4 rounded">
+                    <label for="adminRememberMe" class="text-white/80 text-sm">Remember me on this device</label>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-6 rounded-xl hover:from-green-600 hover:to-teal-700 font-semibold transition-all">
+                        Login as Admin
+                    </button>
+                </div>
+                <div class="pt-2 text-center">
+                    <button onclick="showAdminModal('adminRegistrationModal')" class="text-blue-400 hover:text-blue-300 text-sm">
+                        Don't have an admin account? Register
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- User Management Modal -->
+    <div class="modal-overlay hidden" id="userManagementModal">
+        <div class="modal-content glass rounded-2xl p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-user-cog text-purple-400 mr-2"></i>
+                    User Management
+                </h2>
+                <button onclick="hideAdminModal('userManagementModal')" class="text-white/60 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Search User</label>
+                    <input type="text" id="userSearchInput" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter email or username">
+                </div>
+                <div class="flex space-x-4">
+                    <button id="searchUserBtn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
+                        <i class="fas fa-search mr-2"></i> Search
+                    </button>
+                    <button id="resetUserSearchBtn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-all">
+                        <i class="fas fa-undo mr-2"></i> Reset
+                    </button>
+                </div>
+                <div id="userSearchResults" class="mt-6 hidden">
+                    <h3 class="text-lg font-bold mb-4">User Details</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-white/80">Name:</span>
+                            <span id="userDetailName" class="font-semibold">-</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-white/80">Email:</span>
+                            <span id="userDetailEmail" class="font-semibold">-</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-white/80">Coins:</span>
+                            <span id="userDetailCoins" class="font-semibold">-</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-white/80">Email Verified:</span>
+                            <span id="userDetailVerified" class="status-badge">-</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-white/80">Status:</span>
+                            <span id="userDetailStatus" class="status-badge">-</span>
+                        </div>
+                    </div>
+                    <div class="mt-6 space-y-3">
+                        <h3 class="text-lg font-bold">Admin Actions</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="rewardUserBtn" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-gift mr-2"></i> Reward Coins
+                            </button>
+                            <button id="verifyUserBtn" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-check-circle mr-2"></i> Verify Email
+                            </button>
+                            <button id="resetPasswordBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-key mr-2"></i> Reset Password
+                            </button>
+                            <button id="banUserBtn" class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-ban mr-2"></i> Ban User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Admin Dashboard -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">
+                <i class="fas fa-shield-alt text-blue-400 mr-2"></i>
+                CoinEarner Pro - Admin Panel
+            </h1>
+            <div class="flex items-center space-x-4">
+                <div id="adminStatus" class="hidden">
+                    <span class="text-green-400 font-semibold mr-2">
+                        <i class="fas fa-circle text-xs"></i> Admin
+                    </span>
+                    <span id="adminName">Admin</span>
+                    <button onclick="adminLogout()" class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+                <button onclick="showAdminModal('adminLoginModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-all">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                </button>
+                <button onclick="showAdminModal('adminRegistrationModal')" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-all">
+                    <i class="fas fa-user-plus mr-2"></i>Register
+                </button>
+            </div>
+        </div>
+        <!-- Admin Dashboard Content (Visible only when logged in) -->
+        <div id="adminDashboard" class="hidden">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="glass rounded-2xl p-6 stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-users text-3xl text-blue-400 mr-3"></i>
+                            <span class="text-white/70">Total Users</span>
+                        </div>
+                        <i class="fas fa-chart-line text-green-400"></i>
+                    </div>
+                    <div class="text-3xl font-bold" id="totalUsers">0</div>
+                    <div class="text-sm text-white/60 mt-2">
+                        <span class="text-green-400"><i class="fas fa-arrow-up mr-1"></i>5%</span> from last week
+                    </div>
+                </div>
+                <div class="glass rounded-2xl p-6 stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-coins text-3xl text-yellow-400 mr-3"></i>
+                            <span class="text-white/70">Total Coins</span>
+                        </div>
+                        <i class="fas fa-chart-pie text-green-400"></i>
+                    </div>
+                    <div class="text-3xl font-bold" id="totalCoins">0</div>
+                    <div class="text-sm text-white/60 mt-2">
+                        <span class="text-green-400"><i class="fas fa-arrow-up mr-1"></i>12%</span> from last week
+                    </div>
+                </div>
+                <div class="glass rounded-2xl p-6 stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-envelope text-3xl text-purple-400 mr-3"></i>
+                            <span class="text-white/70">Verified Users</span>
+                        </div>
+                        <i class="fas fa-check-circle text-green-400"></i>
+                    </div>
+                    <div class="text-3xl font-bold" id="verifiedUsers">0</div>
+                    <div class="text-sm text-white/60 mt-2">
+                        <span class="text-green-400"><i class="fas fa-arrow-up mr-1"></i>8%</span> from last week
+                    </div>
+                </div>
+                <div class="glass rounded-2xl p-6 stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-3xl text-red-400 mr-3"></i>
+                            <span class="text-white/70">Pending Verification</span>
+                        </div>
+                        <i class="fas fa-clock text-yellow-400"></i>
+                    </div>
+                    <div class="text-3xl font-bold" id="pendingVerification">0</div>
+                    <div class="text-sm text-white/60 mt-2">
+                        <span class="text-red-400"><i class="fas fa-arrow-up mr-1"></i>3%</span> from last week
+                    </div>
+                </div>
+            </div>
+            <!-- Admin Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glass rounded-2xl p-6 admin-card">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-user-cog text-2xl text-blue-400 mr-3"></i>
+                        <h3 class="text-xl font-bold">User Management</h3>
+                    </div>
+                    <p class="text-white/80 mb-4">Search, view, and manage user accounts</p>
+                    <button onclick="showAdminModal('userManagementModal')" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
+                        <i class="fas fa-search mr-2"></i> Manage Users
+                    </button>
+                </div>
+                <div class="glass rounded-2xl p-6 admin-card">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-cog text-2xl text-green-400 mr-3"></i>
+                        <h3 class="text-xl font-bold">System Settings</h3>
+                    </div>
+                    <p class="text-white/80 mb-4">Configure application settings</p>
+                    <button onclick="showSystemSettings()" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-all">
+                        <i class="fas fa-sliders-h mr-2"></i> System Settings
+                    </button>
+                </div>
+                <div class="glass rounded-2xl p-6 admin-card">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-chart-bar text-2xl text-purple-400 mr-3"></i>
+                        <h3 class="text-xl font-bold">Analytics</h3>
+                    </div>
+                    <p class="text-white/80 mb-4">View application analytics</p>
+                    <button onclick="showAnalytics()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-all">
+                        <i class="fas fa-chart-line mr-2"></i> View Analytics
+                    </button>
+                </div>
+            </div>
+            <!-- Recent Activities -->
+            <div class="glass rounded-2xl p-6 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">
+                        <i class="fas fa-history text-blue-400 mr-2"></i>
+                        Recent Activities
+                    </h3>
+                    <div class="flex space-x-2">
+                        <select id="activityFilter" class="bg-white/20 border border-white/30 rounded-lg px-3 py-1 text-white text-sm">
+                            <option value="all">All Activities</option>
+                            <option value="registration">Registrations</option>
+                            <option value="login">Logins</option>
+                            <option value="earning">Earnings</option>
+                        </select>
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition-all">
+                            <i class="fas fa-filter mr-1"></i> Filter
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-white">
+                        <thead>
+                            <tr class="border-b border-white/20">
+                                <th class="py-3 text-left">User</th>
+                                <th class="py-3 text-left">Activity</th>
+                                <th class="py-3 text-left">IP Address</th>
+                                <th class="py-3 text-left">Time</th>
+                                <th class="py-3 text-left">Status</th>
+                                <th class="py-3 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activityTable">
+                            <tr class="border-b border-white/10">
+                                <td class="py-3">-</td>
+                                <td class="py-3">-</td>
+                                <td class="py-3">-</td>
+                                <td class="py-3">-</td>
+                                <td class="py-3">-</td>
+                                <td class="py-3">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Security Logs -->
+            <div class="glass rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">
+                        <i class="fas fa-shield-alt text-red-400 mr-2"></i>
+                        Security Logs
+                    </h3>
+                    <div class="flex space-x-2">
+                        <button id="clearLogsBtn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-all">
+                            <i class="fas fa-trash-alt mr-1"></i> Clear Logs
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-3" id="securityLogs">
+                    <div class="p-3 bg-white/10 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-shield-alt text-green-400 mr-2"></i>
+                                <span class="font-semibold">System Started</span>
+                            </div>
+                            <span class="text-sm text-white/60">Today, 10:30 AM</span>
+                        </div>
+                        <p class="text-white/80 text-sm mt-1">Admin panel initialized successfully</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- System Settings Modal -->
+    <div class="modal-overlay hidden" id="systemSettingsModal">
+        <div class="modal-content glass rounded-2xl p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">
+                    <i class="fas fa-cogs text-green-400 mr-2"></i>
+                    System Settings
+                </h2>
+                <button onclick="hideAdminModal('systemSettingsModal')" class="text-white/60 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Application Settings</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="font-semibold">Maintenance Mode</label>
+                                <p class="text-sm text-white/60">Enable to put the application in maintenance mode</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="maintenanceMode" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="font-semibold">New User Registration</label>
+                                <p class="text-sm text-white/60">Allow new user registrations</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="newUserRegistration" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="font-semibold">Email Verification Required</label>
+                                <p class="text-sm text-white/60">Require email verification for new users</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="emailVerification" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Earning Settings</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">Daily Earning Limit</label>
+                            <div class="flex items-center">
+                                <input type="number" id="dailyEarningLimit" class="w-full px-4 py-2 glass-input rounded-xl text-white placeholder-white/50 input-base" value="100">
+                                <span class="ml-2 text-white/60">coins</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">Minimum Withdrawal Amount</label>
+                            <div class="flex items-center">
+                                <input type="number" id="minWithdrawalAmount" class="w-full px-4 py-2 glass-input rounded-xl text-white placeholder-white/50 input-base" value="20">
+                                <span class="ml-2 text-white/60">coins</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Admin Credentials</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">Admin Registration Code</label>
+                            <input type="text" id="adminCode" class="w-full px-4 py-2 glass-input rounded-xl text-white placeholder-white/50 input-base" value="ADMIN2024">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="hideAdminModal('systemSettingsModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-all">
+                        Cancel
+                    </button>
+                    <button onclick="saveSystemSettings()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-all">
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Custom Alert Modal -->
+    <div class="modal-overlay hidden" id="adminCustomAlert">
+        <div class="modal-content glass rounded-2xl p-8 text-center">
+            <i id="adminAlertIcon" class="fas fa-info-circle text-5xl mb-4 text-blue-400"></i>
+            <p id="adminAlertMessage" class="text-xl mb-6 text-white">Alert message</p>
+            <button onclick="hideAdminCustomAlert()" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold transition-all">
+                OK
+            </button>
+        </div>
+    </div>
+    <script src="scripts/index.html"></script>
+</body>
+</html>
