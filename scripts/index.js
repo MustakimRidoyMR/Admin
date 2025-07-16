@@ -1,125 +1,607 @@
-       // Enhanced Admin State Management
-        class AdminState {
+    // Admin Panel Configuration
+        const config = {
+            apiEndpoint: 'https://script.google.com/macros/s/AKfycbwzeoNtCleXecmpyEpfQMiZxNHizvl84nUipSj1FxTySFVhQrT-3K9Oo_7FiidM5HPL/exec',
+            adminFolder: 'admin_data',
+            coinToUsdRate: 0.000001
+        };
+
+        // Admin State Management
+        class AdminPanel {
             constructor() {
-                this.admin = null;
-                this.isAdminMode = false;
-                this.adminCode = "ADMIN2024"; // Default admin registration code
-                this.adminCredentials = {}; // Store admin credentials
+                this.currentAdmin = null;
+                this.selectedUser = null;
+                this.adminCodes = ['ADMIN2025', 'CEPADMIN', 'MANAGER123'];
+                this.actionHistory = [];
+                this.init();
             }
-            
-            saveAdminState() {
-                localStorage.setItem('adminState', JSON.stringify({
-                    admin: this.admin,
-                    isAdminMode: this.isAdminMode
-                }));
+
+            async init() {
+                await this.loadAdminCodes();
+                this.checkStoredLogin();
+                this.setupEventListeners();
             }
-            
-            loadAdminState() {
-                const state = localStorage.getItem('adminState');
-                if (state) {
-                    const parsed = JSON.parse(state);
-                    this.admin = parsed.admin;
-                    this.isAdminMode = parsed.isAdminMode;
-                    return true;
+
+            async loadAdminCodes() {
+                try {
+                    const response = await fetch(`${config.apiEndpoint}?folder=${config.adminFolder}&filename=admin_codes.json`);
+                    if (response.ok) {
+                        const text = await response.text();
+                        if (!text.includes('error')) {
+                            this.adminCodes = JSON.parse(text);
+                        }
+                    }
+                } catch (error) {
+                    console.log('Admin codes not found, using defaults');
+                    this.adminCodes = ['ADMIN2025', 'CEPADMIN', 'MANAGER123'];
                 }
-                return false;
             }
-            
-            registerAdmin(name, email, password, adminCode) {
-                if (adminCode !== this.adminCode) {
-                    return { success: false, message: "Invalid admin registration code" };
+
+            checkStoredLogin() {
+                const storedAdmin = localStorage.getItem('adminSession');
+                if (storedAdmin) {
+                    try {
+                        const adminData = JSON.parse(storedAdmin);
+                        if (Date.now() - adminData.loginTime < 3600000) { // 1 hour session
+                            this.currentAdmin = adminData;
+                            this.showDashboard();
+                        } else {
+                            localStorage.removeItem('adminSession');
+                        }
+                    } catch (error) {
+                        localStorage.removeItem('adminSession');
+                    }
                 }
+            }
+
+            async authenticateAdmin(email, password, adminCode) {
+                try {
+                    console.log('Starting admin authentication for:', email);
+                    
+                    // First check if admin code is valid
+                    if (!this.adminCodes.includes(adminCode)) {
+                        throw new Error('Invalid admin code');
+                    }
+                    
+                    // Check if user exists in main app database - using same method as main app
+                    const userData = await this.loadUserFromDatabase(email);
+                    
+                    if (!userData) {
+                        throw new Error('User not found in system. Please register in the main app first.');
+                    }
+                    
+                    console.log('User found:', userData.name);
+                    
+                    // Verify password
+                    if (userData.password !== password) {
+                        throw new Error('Invalid password');
+                    }
+                    
+                    console.log('Password verified for:', userData.name);
+                    
+                    // Create admin session
+                    const adminData = {
+                        email: userData.email,
+                        name: userData.name,
+                        phone: userData.phone,
+                        adminCode: adminCode,
+                        loginTime: Date.now(),
+                        permissions: ['user_management', 'limited_edit']
+                    };
+                    
+                    // Save admin session
+                    await this.saveAdminSession(adminData);
+                    
+                    this.currentAdmin = adminData;
+                    localStorage.setItem('adminSession', JSON.stringify(adminData));
+                    
+                    this.logAction('Admin Login', `${userData.name} logged in as admin`);
+                    return { success: true, message: 'Admin login successful' };
+                } catch (error) {
+                    console.error('Admin authentication error:', error);
+                    return { success: false, message: error.message };
+                }
+            }
+
+            async loadUserFromDatabase(email) {
+                try {
+                    const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    console.log('Loading user file:', filename);
+                    
+                    const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
+                    
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        console.log('Response not ok:', response.status);
+                        return null;
+                    }
+                    
+                    const text = await response.text();
+                    console.log('Response text preview:', text.substring(0, 200));
+                    
+                    if (text.includes('error') || text.includes('not found') || text.trim() === '') {
+                        console.log('User file not found or error in response');
+                        return null;
+                    }
+                    
+                    try {
+                        const userData = JSON.parse(text);
+                        console.log('User data loaded successfully for:', email);
+                        return userData;
+                    } catch (parseError) {
+                        console.error('JSON parse error:', parseError);
+                        console.log('Raw response that failed to parse:', text);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('Load user from database error:', error);
+                    return null;
+                }
+            }
+
+            async saveAdminSession(adminData) {
+                try {
+                    const sessionData = {
+                        ...adminData,
+                        sessionId: Date.now().toString(),
+                        ipAddress: 'hidden',
+                        userAgent: navigator.userAgent.substring(0, 100)
+                    };
+                    
+                    const result = await fetch(config.apiEndpoint, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            folder: config.adminFolder,
+                            filename: `session_${adminData.email.replace('@', '_at_').replace(/\./g, '_dot_')}.json`,
+                            content: JSON.stringify(sessionData, null, 2)
+                        })
+                    });
+                    
+                    console.log('Admin session saved:', result.ok);
+                } catch (error) {
+                    console.error('Failed to save admin session:', error);
+                }
+            }
+
+            showDashboard() {
+                document.getElementById('loginRequired').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                document.getElementById('adminInfo').classList.remove('hidden');
+                document.getElementById('loginBtn').classList.add('hidden');
                 
-                // Generate a simple admin ID
-                const adminId = btoa(email + Date.now()).substring(0, 30);
+                document.getElementById('adminName').textContent = this.currentAdmin.name;
+                document.getElementById('adminEmail').textContent = this.currentAdmin.email;
                 
-                this.adminCredentials[adminId] = {
-                    name,
-                    email,
-                    password: this.hashPassword(password),
-                    registeredAt: new Date().toISOString(),
-                    lastLogin: null,
-                    permissions: ["user_management", "system_settings", "analytics", "security"]
+                this.loadDashboardStats();
+            }
+
+            async loadDashboardStats() {
+                try {
+                    // This would normally query your user database
+                    // For now, we'll show basic stats
+                    document.getElementById('totalUsers').textContent = '---';
+                    document.getElementById('verifiedUsers').textContent = '---';
+                    document.getElementById('totalCoins').textContent = '---';
+                    document.getElementById('totalActivities').textContent = '---';
+                } catch (error) {
+                    console.error('Failed to load dashboard stats:', error);
+                }
+            }
+
+            async searchUserByEmail(email) {
+                return await this.loadUserFromDatabase(email);
+            }
+
+            displaySearchResults(users) {
+                const userList = document.getElementById('userList');
+                const searchResults = document.getElementById('searchResults');
+                
+                if (!users || users.length === 0) {
+                    searchResults.classList.add('hidden');
+                    showAlert('No users found matching your search criteria', 'warning');
+                    return;
+                }
+
+                userList.innerHTML = '';
+                
+                users.forEach(user => {
+                    const userCard = this.createUserCard(user);
+                    userList.appendChild(userCard);
+                });
+
+                searchResults.classList.remove('hidden');
+            }
+
+            createUserCard(user) {
+                const div = document.createElement('div');
+                div.className = 'user-card bg-white/10 rounded-xl p-4 border border-white/20';
+                
+                const verificationStatus = user.isEmailVerified ? 'verified' : 'unverified';
+                const activeStatus = user.isActive !== false ? 'active' : 'inactive';
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-white">${user.name}</h4>
+                            <p class="text-white/70 text-sm">${user.email}</p>
+                            <p class="text-white/60 text-xs">${user.phone || 'No phone'}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="status-badge ${verificationStatus}">
+                                <i class="fas ${user.isEmailVerified ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                ${user.isEmailVerified ? 'Verified' : 'Unverified'}
+                            </span>
+                            <br>
+                            <span class="status-badge ${activeStatus} mt-1">
+                                <i class="fas ${user.isActive !== false ? 'fa-check' : 'fa-ban'}"></i>
+                                ${user.isActive !== false ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-yellow-400">${user.coins || 0}</div>
+                            <div class="text-xs text-white/60">Coins</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-cyan-400">${user.diamonds || 0}</div>
+                            <div class="text-xs text-white/60">Diamonds</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-green-400">৳${(user.earnings || 0).toFixed(2)}</div>
+                            <div class="text-xs text-white/60">Earnings</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-purple-400">${user.streak || 0}</div>
+                            <div class="text-xs text-white/60">Streak</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-white/70">
+                            Joined: ${new Date(user.joinDate).toLocaleDateString()}
+                        </div>
+                        <button onclick="editUser('${user.email}')" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                            <i class="fas fa-edit mr-1"></i>Edit User
+                        </button>
+                    </div>
+                `;
+                
+                return div;
+            }
+
+            async editUser(email) {
+                try {
+                    const user = await this.searchUserByEmail(email);
+                    if (!user) {
+                        showAlert('User not found', 'error');
+                        return;
+                    }
+
+                    this.selectedUser = user;
+                    this.showEditModal(user);
+                } catch (error) {
+                    console.error('Edit user error:', error);
+                    showAlert('Failed to load user data', 'error');
+                }
+            }
+
+            showEditModal(user) {
+                document.getElementById('editUserName').textContent = user.name;
+                const form = document.getElementById('editUserForm');
+                
+                form.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">
+                                Coins (Current: ${user.coins || 0}) 
+                                <span class="text-red-400">*Can only decrease</span>
+                            </label>
+                            <input type="number" id="editCoins" value="${user.coins || 0}" 
+                                   max="${user.coins || 0}" min="0" class="edit-field">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">
+                                Diamonds (Current: ${user.diamonds || 0})
+                                <span class="text-green-400">*Can increase/decrease</span>
+                            </label>
+                            <input type="number" id="editDiamonds" value="${user.diamonds || 0}" 
+                                   min="0" class="edit-field">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">
+                                Earnings (Current: ৳${(user.earnings || 0).toFixed(2)})
+                                <span class="text-red-400">*Can only decrease</span>
+                            </label>
+                            <input type="number" id="editEarnings" value="${user.earnings || 0}" 
+                                   max="${user.earnings || 0}" min="0" step="0.01" class="edit-field">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">
+                                Streak (Current: ${user.streak || 0})
+                                <span class="text-green-400">*Can increase/decrease</span>
+                            </label>
+                            <input type="number" id="editStreak" value="${user.streak || 0}" 
+                                   min="0" class="edit-field">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">Account Status</label>
+                            <select id="editIsActive" class="edit-field">
+                                <option value="true" ${user.isActive !== false ? 'selected' : ''}>Active</option>
+                                <option value="false" ${user.isActive === false ? 'selected' : ''}>Inactive</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">Preferred Language</label>
+                            <select id="editLanguage" class="edit-field">
+                                <option value="en" ${user.preferredLanguage === 'en' ? 'selected' : ''}>English</option>
+                                <option value="bn" ${user.preferredLanguage === 'bn' ? 'selected' : ''}>Bengali</option>
+                                <option value="hi" ${user.preferredLanguage === 'hi' ? 'selected' : ''}>Hindi</option>
+                                <option value="ar" ${user.preferredLanguage === 'ar' ? 'selected' : ''}>Arabic</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">Daily Games Unlocked</label>
+                            <select id="editGamesUnlocked" class="edit-field">
+                                <option value="true" ${user.dailyUnlockedGames ? 'selected' : ''}>Yes</option>
+                                <option value="false" ${!user.dailyUnlockedGames ? 'selected' : ''}>No</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">Daily Videos Unlocked</label>
+                            <select id="editVideosUnlocked" class="edit-field">
+                                <option value="true" ${user.dailyUnlockedVideos ? 'selected' : ''}>Yes</option>
+                                <option value="false" ${!user.dailyUnlockedVideos ? 'selected' : ''}>No</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h4 class="text-lg font-bold mb-2">Read-Only Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div><strong>Gender:</strong> ${user.gender || 'Not specified'}</div>
+                            <div><strong>Date of Birth:</strong> ${user.dateOfBirth || 'Not specified'}</div>
+                            <div><strong>Location:</strong> ${user.location || user.address || 'Not specified'}</div>
+                            <div><strong>Bio:</strong> ${user.bio || 'No bio'}</div>
+                            <div><strong>Join Date:</strong> ${new Date(user.joinDate).toLocaleDateString()}</div>
+                            <div><strong>Last Login:</strong> ${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('editUserModal').classList.remove('hidden');
+            }
+
+            async saveUserChanges() {
+                if (!this.selectedUser) return;
+
+                try {
+                    const originalUser = { ...this.selectedUser };
+                    
+                    // Get new values
+                    const newCoins = parseInt(document.getElementById('editCoins').value) || 0;
+                    const newDiamonds = parseInt(document.getElementById('editDiamonds').value) || 0;
+                    const newEarnings = parseFloat(document.getElementById('editEarnings').value) || 0;
+                    const newStreak = parseInt(document.getElementById('editStreak').value) || 0;
+                    const newIsActive = document.getElementById('editIsActive').value === 'true';
+                    const newLanguage = document.getElementById('editLanguage').value;
+                    const newGamesUnlocked = document.getElementById('editGamesUnlocked').value === 'true';
+                    const newVideosUnlocked = document.getElementById('editVideosUnlocked').value === 'true';
+
+                    // Validate changes
+                    if (newCoins > originalUser.coins) {
+                        showAlert('Cannot increase coins amount', 'error');
+                        return;
+                    }
+
+                    if (newEarnings > originalUser.earnings) {
+                        showAlert('Cannot increase earnings amount', 'error');
+                        return;
+                    }
+
+                    // Update user data
+                    const updatedUser = {
+                        ...originalUser,
+                        coins: newCoins,
+                        diamonds: newDiamonds,
+                        earnings: newEarnings,
+                        streak: newStreak,
+                        isActive: newIsActive,
+                        preferredLanguage: newLanguage,
+                        dailyUnlockedGames: newGamesUnlocked,
+                        dailyUnlockedVideos: newVideosUnlocked,
+                        lastUpdated: new Date().toISOString(),
+                        lastUpdatedBy: this.currentAdmin.email
+                    };
+
+                    // Save to server
+                    const result = await this.saveUserData(updatedUser);
+                    
+                    if (result.success) {
+                        this.logAction('User Updated', `Updated ${originalUser.name} (${originalUser.email})`);
+                        showAlert('User data updated successfully', 'success');
+                        hideModal('editUserModal');
+                        
+                        // Refresh search results if visible
+                        if (!document.getElementById('searchResults').classList.contains('hidden')) {
+                            searchUser();
+                        }
+                    } else {
+                        showAlert('Failed to update user data', 'error');
+                    }
+                } catch (error) {
+                    console.error('Save user changes error:', error);
+                    showAlert('Failed to save changes', 'error');
+                }
+            }
+
+            async saveUserData(userData) {
+                try {
+                    const filename = userData.email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    const response = await fetch(config.apiEndpoint, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            folder: 'users',
+                            filename: filename,
+                            content: JSON.stringify(userData, null, 2)
+                        })
+                    });
+
+                    if (response.ok) {
+                        return { success: true };
+                    } else {
+                        throw new Error('Server error');
+                    }
+                } catch (error) {
+                    console.error('Save user data error:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+
+            logAction(action, details) {
+                const logEntry = {
+                    timestamp: new Date().toISOString(),
+                    admin: this.currentAdmin.name,
+                    adminEmail: this.currentAdmin.email,
+                    action: action,
+                    details: details
                 };
+
+                this.actionHistory.unshift(logEntry);
+                this.actionHistory = this.actionHistory.slice(0, 50); // Keep last 50 actions
                 
-                this.admin = {
-                    id: adminId,
-                    name,
-                    email,
-                    permissions: ["user_management", "system_settings", "analytics", "security"]
-                };
-                
-                this.isAdminMode = true;
-                this.saveAdminState();
-                return { success: true, message: "Admin registration successful" };
+                this.updateActionLog();
+                this.saveActionLog();
             }
-            
-            loginAdmin(email, password) {
-                // Find admin by email
-                const adminId = Object.keys(this.adminCredentials).find(
-                    id => this.adminCredentials[id].email === email
-                );
+
+            updateActionLog() {
+                const actionLog = document.getElementById('actionLog');
                 
-                if (!adminId) {
-                    return { success: false, message: "Admin not found" };
+                if (this.actionHistory.length === 0) {
+                    actionLog.innerHTML = '<p class="text-white/70 text-center">No recent actions</p>';
+                    return;
                 }
+
+                actionLog.innerHTML = '';
                 
-                // Verify password
-                if (this.adminCredentials[adminId].password !== this.hashPassword(password)) {
-                    return { success: false, message: "Invalid password" };
-                }
-                
-                // Update last login
-                this.adminCredentials[adminId].lastLogin = new Date().toISOString();
-                
-                this.admin = {
-                    id: adminId,
-                    name: this.adminCredentials[adminId].name,
-                    email,
-                    permissions: this.adminCredentials[adminId].permissions
-                };
-                
-                this.isAdminMode = true;
-                this.saveAdminState();
-                return { success: true, message: "Admin login successful" };
+                this.actionHistory.slice(0, 10).forEach(log => {
+                    const logDiv = document.createElement('div');
+                    logDiv.className = 'bg-white/10 rounded-lg p-3 border-l-4 border-blue-400';
+                    
+                    logDiv.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-semibold text-white">${log.action}</div>
+                                <div class="text-sm text-white/80">${log.details}</div>
+                                <div class="text-xs text-white/60">by ${log.admin}</div>
+                            </div>
+                            <div class="text-xs text-white/60">
+                                ${new Date(log.timestamp).toLocaleString()}
+                            </div>
+                        </div>
+                    `;
+                    
+                    actionLog.appendChild(logDiv);
+                });
             }
-            
+
+            async saveActionLog() {
+                try {
+                    await fetch(config.apiEndpoint, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            folder: config.adminFolder,
+                            filename: `action_log_${new Date().toISOString().split('T')[0]}.json`,
+                            content: JSON.stringify(this.actionHistory, null, 2)
+                        })
+                    });
+                } catch (error) {
+                    console.error('Failed to save action log:', error);
+                }
+            }
+
             logout() {
-                this.admin = null;
-                this.isAdminMode = false;
-                this.saveAdminState();
+                this.logAction('Admin Logout', `${this.currentAdmin.name} logged out`);
+                
+                this.currentAdmin = null;
+                localStorage.removeItem('adminSession');
+                
+                document.getElementById('loginRequired').classList.remove('hidden');
+                document.getElementById('adminDashboard').classList.add('hidden');
+                document.getElementById('adminInfo').classList.add('hidden');
+                document.getElementById('loginBtn').classList.remove('hidden');
+                
+                showAlert('Admin logged out successfully', 'success');
             }
-            
-            hashPassword(password) {
-                // Simple hash for demo purposes
-                return btoa(password + this.adminCode);
-            }
-            
-            hasPermission(permission) {
-                return this.admin && this.admin.permissions.includes(permission);
+
+            setupEventListeners() {
+                // Login form handler
+                document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+                    const password = document.getElementById('loginPassword').value;
+                    const adminCode = document.getElementById('adminCode').value.trim();
+                    
+                    if (!email || !password || !adminCode) {
+                        showAlert('Please fill in all fields', 'warning');
+                        return;
+                    }
+                    
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<div class="spinner"></div>Authenticating...';
+                    submitBtn.disabled = true;
+                    
+                    try {
+                        const result = await this.authenticateAdmin(email, password, adminCode);
+                        
+                        if (result.success) {
+                            hideModal('loginModal');
+                            this.showDashboard();
+                            showAlert(result.message, 'success');
+                            
+                            // Clear form
+                            document.getElementById('loginEmail').value = '';
+                            document.getElementById('loginPassword').value = '';
+                            document.getElementById('adminCode').value = '';
+                        } else {
+                            showAlert(result.message, 'error');
+                        }
+                    } catch (error) {
+                        console.error('Authentication error:', error);
+                        showAlert('Authentication failed. Please check your credentials.', 'error');
+                    } finally {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                });
             }
         }
-        
-        // Initialize Admin State
-        const adminState = new AdminState();
-        adminState.loadAdminState();
-        
-        // Enhanced Admin UI Functions
-        function showAdminModal(modalId) {
-            document.getElementById(modalId).classList.remove('hidden');
+
+        // Global instance
+        const adminPanel = new AdminPanel();
+
+        // Global functions
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
         }
-        
-        function hideAdminModal(modalId) {
+
+        function hideModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
         }
-        
-        function hideAdminCustomAlert() {
-            document.getElementById('adminCustomAlert').classList.add('hidden');
-        }
-        
-        function showAdminCustomAlert(message, type = 'info') {
-            const alertIcon = document.getElementById('adminAlertIcon');
-            const alertMessage = document.getElementById('adminAlertMessage');
+
+        function showAlert(message, type = 'info') {
+            const alertIcon = document.getElementById('alertIcon');
+            const alertMessage = document.getElementById('alertMessage');
             
             alertMessage.textContent = message;
             
@@ -137,351 +619,57 @@
                     alertIcon.className = 'fas fa-info-circle text-5xl mb-4 text-blue-400';
             }
             
-            document.getElementById('adminCustomAlert').classList.remove('hidden');
+            document.getElementById('customAlert').classList.remove('hidden');
         }
-        
-        // Admin Registration Form Handler
-        document.getElementById('adminRegistrationForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+
+        function hideAlert() {
+            document.getElementById('customAlert').classList.add('hidden');
+        }
+
+        async function searchUser() {
+            const email = document.getElementById('searchEmail').value.trim().toLowerCase();
+            const name = document.getElementById('searchName').value.trim().toLowerCase();
             
-            const name = document.getElementById('adminName').value.trim();
-            const email = document.getElementById('adminEmail').value.trim().toLowerCase();
-            const password = document.getElementById('adminPassword').value;
-            const adminCode = document.getElementById('adminCode').value;
-            
-            // Validate inputs
-            if (name.length < 2) {
-                showAdminCustomAlert('Name must be at least 2 characters long', 'error');
+            if (!email && !name) {
+                showAlert('Please enter an email or name to search', 'warning');
                 return;
             }
             
-            if (!email.includes('@') || !email.includes('.')) {
-                showAdminCustomAlert('Please enter a valid email address', 'error');
-                return;
-            }
-            
-            if (password.length < 8) {
-                showAdminCustomAlert('Password must be at least 8 characters long', 'error');
-                return;
-            }
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="spinner"></div>Processing...';
-            submitBtn.disabled = true;
-            
-            // Register admin
-            const result = adminState.registerAdmin(name, email, password, adminCode);
-            
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                
-                if (result.success) {
-                    showAdminCustomAlert(result.message, 'success');
-                    hideAdminModal('adminRegistrationModal');
-                    showAdminCustomAlert('Admin registration successful! You can now login.', 'success');
+            if (email) {
+                const user = await adminPanel.searchUserByEmail(email);
+                if (user) {
+                    adminPanel.displaySearchResults([user]);
                 } else {
-                    showAdminCustomAlert(result.message, 'error');
+                    adminPanel.displaySearchResults([]);
                 }
-            }, 1500);
-        });
-        
-        // Admin Login Form Handler
-        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('loginAdminEmail').value.trim().toLowerCase();
-            const password = document.getElementById('loginAdminPassword').value;
-            
-            // Validate inputs
-            if (!email.includes('@') || !email.includes('.')) {
-                showAdminCustomAlert('Please enter a valid email address', 'error');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showAdminCustomAlert('Please enter your password', 'error');
-                return;
-            }
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="spinner"></div>Logging in...';
-            submitBtn.disabled = true;
-            
-            // Login admin
-            const result = adminState.loginAdmin(email, password);
-            
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                
-                if (result.success) {
-                    showAdminCustomAlert(result.message, 'success');
-                    hideAdminModal('adminLoginModal');
-                    updateAdminUI();
-                } else {
-                    showAdminCustomAlert(result.message, 'error');
-                }
-            }, 1500);
-        });
-        
-        // User Management Functions
-        function searchUser() {
-            const searchTerm = document.getElementById('userSearchInput').value.trim().toLowerCase();
-            
-            if (!searchTerm) {
-                showAdminCustomAlert('Please enter an email or username to search', 'warning');
-                return;
-            }
-            
-            // In a real implementation, this would query your user database
-            // For demo purposes, we'll simulate a user
-            const demoUsers = [
-                {
-                    id: 'user1',
-                    name: 'John Doe',
-                    email: 'john@example.com',
-                    coins: 1250,
-                    verified: true,
-                    status: 'active'
-                },
-                {
-                    id: 'user2',
-                    name: 'Jane Smith',
-                    email: 'jane@example.com',
-                    coins: 750,
-                    verified: false,
-                    status: 'pending'
-                },
-                {
-                    id: 'user3',
-                    name: 'Bob Johnson',
-                    email: 'bob@example.com',
-                    coins: 2000,
-                    verified: true,
-                    status: 'active'
-                }
-            ];
-            
-            const user = demoUsers.find(u => 
-                u.email.toLowerCase().includes(searchTerm) || 
-                u.name.toLowerCase().includes(searchTerm)
-            );
-            
-            if (user) {
-                document.getElementById('userSearchResults').classList.remove('hidden');
-                document.getElementById('userDetailName').textContent = user.name;
-                document.getElementById('userDetailEmail').textContent = user.email;
-                document.getElementById('userDetailCoins').textContent = user.coins;
-                
-                const verifiedBadge = document.getElementById('userDetailVerified');
-                verifiedBadge.textContent = user.verified ? 'Verified' : 'Unverified';
-                verifiedBadge.className = `status-badge ${user.verified ? 'verified' : 'unverified'}`;
-                
-                const statusBadge = document.getElementById('userDetailStatus');
-                statusBadge.textContent = user.status;
-                statusBadge.className = `status-badge ${user.status === 'active' ? 'verified' : 'pending'}`;
             } else {
-                showAdminCustomAlert('No user found with that email or username', 'warning');
+                // For name search, you would need to implement a search endpoint
+                // For now, show message that email search is preferred
+                showAlert('Please use email search for best results', 'info');
             }
         }
-        
-        function resetUserSearch() {
-            document.getElementById('userSearchInput').value = '';
-            document.getElementById('userSearchResults').classList.add('hidden');
+
+        function editUser(email) {
+            adminPanel.editUser(email);
         }
-        
-        function rewardUser() {
-            const coinsInput = prompt('Enter number of coins to reward:');
-            if (coinsInput && !isNaN(coinsInput) && parseInt(coinsInput) > 0) {
-                const coins = parseInt(coinsInput);
-                showAdminCustomAlert(`User rewarded with ${coins} coins`, 'success');
-                // In real implementation, update user's coin balance
-            } else {
-                showAdminCustomAlert('Please enter a valid number of coins', 'warning');
-            }
+
+        function saveUserChanges() {
+            adminPanel.saveUserChanges();
         }
-        
-        function verifyUser() {
-            showAdminCustomAlert('User email verification sent', 'success');
-            // In real implementation, send verification email
-        }
-        
-        function resetUserPassword() {
-            const newPassword = prompt('Enter new password for user:');
-            if (newPassword && newPassword.length >= 6) {
-                showAdminCustomAlert('User password reset successfully', 'success');
-                // In real implementation, update user's password
-            } else {
-                showAdminCustomAlert('Password must be at least 6 characters', 'warning');
-            }
-        }
-        
-        function banUser() {
-            const confirmBan = confirm('Are you sure you want to ban this user?');
-            if (confirmBan) {
-                showAdminCustomAlert('User has been banned', 'success');
-                // In real implementation, update user's status to banned
-            }
-        }
-        
-        // System Settings Functions
-        function showSystemSettings() {
-            if (!adminState.hasPermission('system_settings')) {
-                showAdminCustomAlert('You do not have permission to access system settings', 'error');
-                return;
-            }
-            showAdminModal('systemSettingsModal');
-        }
-        
-        function saveSystemSettings() {
-            // In real implementation, save settings to database
-            showAdminCustomAlert('System settings saved successfully', 'success');
-            hideAdminModal('systemSettingsModal');
-        }
-        
-        // Analytics Functions
-        function showAnalytics() {
-            if (!adminState.hasPermission('analytics')) {
-                showAdminCustomAlert('You do not have permission to view analytics', 'error');
-                return;
-            }
-            showAdminCustomAlert('Analytics feature coming soon!', 'info');
-        }
-        
-        // Admin Logout
+
         function adminLogout() {
-            adminState.logout();
-            document.getElementById('adminDashboard').classList.add('hidden');
-            document.getElementById('adminStatus').classList.add('hidden');
-            document.getElementById('adminLoginModal').classList.remove('hidden');
-            showAdminCustomAlert('Admin logged out successfully', 'success');
+            adminPanel.logout();
+        }
+
+        // Dark mode support
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
         }
         
-        // Update Admin UI
-        function updateAdminUI() {
-            if (adminState.isAdminMode && adminState.admin) {
-                document.getElementById('adminStatus').classList.remove('hidden');
-                document.getElementById('adminName').textContent = adminState.admin.name;
-                document.getElementById('adminDashboard').classList.remove('hidden');
-                document.getElementById('adminLoginModal').classList.add('hidden');
-                document.getElementById('adminRegistrationModal').classList.add('hidden');
-                
-                // Load sample data for demo
-                loadSampleData();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
             } else {
-                document.getElementById('adminDashboard').classList.add('hidden');
-                document.getElementById('adminStatus').classList.add('hidden');
-                document.getElementById('adminLoginModal').classList.remove('hidden');
+                document.documentElement.classList.remove('dark');
             }
-        }
-        
-        // Load Sample Data for Demo
-        function loadSampleData() {
-            // Update stats
-            document.getElementById('totalUsers').textContent = '1,245';
-            document.getElementById('totalCoins').textContent = '125,678';
-            document.getElementById('verifiedUsers').textContent = '1,089';
-            document.getElementById('pendingVerification').textContent = '156';
-            
-            // Load sample activities
-            const activities = [
-                { user: 'john@example.com', activity: 'Registered', ip: '192.168.1.1', time: '10:30 AM', status: 'success' },
-                { user: 'jane@example.com', activity: 'Logged in', ip: '192.168.1.2', time: '11:15 AM', status: 'success' },
-                { user: 'bob@example.com', activity: 'Earned 50 coins', ip: '192.168.1.3', time: '11:45 AM', status: 'success' },
-                { user: 'alice@example.com', activity: 'Attempted login', ip: '192.168.1.4', time: '12:05 PM', status: 'error' },
-                { user: 'mike@example.com', activity: 'Completed survey', ip: '192.168.1.5', time: '12:30 PM', status: 'success' }
-            ];
-            
-            const activityTable = document.getElementById('activityTable');
-            activityTable.innerHTML = '';
-            
-            activities.forEach(activity => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-white/10 user-row';
-                
-                row.innerHTML = `
-                    <td class="py-3">${activity.user}</td>
-                    <td class="py-3">${activity.activity}</td>
-                    <td class="py-3">${activity.ip}</td>
-                    <td class="py-3">${activity.time}</td>
-                    <td class="py-3">
-                        <span class="status-badge ${activity.status === 'success' ? 'verified' : 'unverified'}">
-                            ${activity.status}
-                        </span>
-                    </td>
-                    <td class="py-3">
-                        <button class="text-blue-400 hover:text-blue-300 mr-2" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="text-red-400 hover:text-red-300" title="Delete Record">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                
-                activityTable.appendChild(row);
-            });
-            
-            // Load sample security logs
-            const securityLogs = [
-                { type: 'system', message: 'Admin panel initialized', time: 'Today, 10:30 AM' },
-                { type: 'login', message: 'Admin login: john@example.com', time: 'Today, 10:35 AM' },
-                { type: 'user', message: 'User registration: jane@example.com', time: 'Today, 11:15 AM' },
-                { type: 'earning', message: 'User earned 50 coins: bob@example.com', time: 'Today, 11:45 AM' },
-                { type: 'security', message: 'Failed login attempt: alice@example.com', time: 'Today, 12:05 PM' }
-            ];
-            
-            const logsContainer = document.getElementById('securityLogs');
-            logsContainer.innerHTML = '';
-            
-            securityLogs.forEach(log => {
-                const logElement = document.createElement('div');
-                logElement.className = 'p-3 bg-white/10 rounded-lg';
-                
-                let iconClass = 'fas fa-info-circle text-blue-400';
-                if (log.type === 'login') iconClass = 'fas fa-sign-in-alt text-green-400';
-                if (log.type === 'user') iconClass = 'fas fa-user-plus text-yellow-400';
-                if (log.type === 'earning') iconClass = 'fas fa-coins text-yellow-400';
-                if (log.type === 'security') iconClass = 'fas fa-shield-alt text-red-400';
-                
-                logElement.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center">
-                            <i class="${iconClass} mr-2"></i>
-                            <span class="font-semibold">${log.message}</span>
-                        </div>
-                        <span class="text-sm text-white/60">${log.time}</span>
-                    </div>
-                    <p class="text-white/80 text-sm mt-1">${log.type} event</p>
-                `;
-                
-                logsContainer.appendChild(logElement);
-            });
-        }
-        
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            // Setup admin registration and login forms
-            document.getElementById('searchUserBtn').addEventListener('click', searchUser);
-            document.getElementById('resetUserSearchBtn').addEventListener('click', resetUserSearch);
-            
-            // Setup user management buttons
-            document.getElementById('rewardUserBtn').addEventListener('click', rewardUser);
-            document.getElementById('verifyUserBtn').addEventListener('click', verifyUser);
-            document.getElementById('resetPasswordBtn').addEventListener('click', resetUserPassword);
-            document.getElementById('banUserBtn').addEventListener('click', banUser);
-            
-            // Setup system settings buttons
-            document.getElementById('clearLogsBtn').addEventListener('click', function() {
-                if (confirm('Are you sure you want to clear all security logs?')) {
-                    document.getElementById('securityLogs').innerHTML = '';
-                    showAdminCustomAlert('Security logs cleared', 'success');
-                }
-            });
-            
-            // Initialize admin UI based on state
-            updateAdminUI();
         });
