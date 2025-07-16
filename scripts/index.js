@@ -1,4 +1,4 @@
-    // Admin Panel Configuration
+// Admin Panel Configuration
         const config = {
             apiEndpoint: 'https://script.google.com/macros/s/AKfycbwzeoNtCleXecmpyEpfQMiZxNHizvl84nUipSj1FxTySFVhQrT-3K9Oo_7FiidM5HPL/exec',
             adminFolder: 'admin_data',
@@ -55,30 +55,32 @@
 
             async authenticateAdmin(email, password, adminCode) {
                 try {
-                    console.log('Starting admin authentication for:', email);
-                    
                     // First check if admin code is valid
-                    if (!this.adminCodes.includes(adminCode)) {
+                    if (!this.adminCodes.includes(adminCode) || !this.adminCodes === 'ADMIN2025') {
                         throw new Error('Invalid admin code');
                     }
+
+                    // Check if user exists in main app database
+                    const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
                     
-                    // Check if user exists in main app database - using same method as main app
-                    const userData = await this.loadUserFromDatabase(email);
-                    
-                    if (!userData) {
-                        throw new Error('User not found in system. Please register in the main app first.');
+                    if (!response.ok) {
+                        throw new Error('User not found in system');
                     }
-                    
-                    console.log('User found:', userData.name);
+
+                    const text = await response.text();
+                    if (text.includes('error') || text.includes('not found')) {
+                        throw new Error('User not found in system');
+                    }
+
+                    const userData = JSON.parse(text);
                     
                     // Verify password
                     if (userData.password !== password) {
                         throw new Error('Invalid password');
                     }
-                    
-                    console.log('Password verified for:', userData.name);
-                    
-                    // Create admin session
+
+                    // Check if user is already an admin
                     const adminData = {
                         email: userData.email,
                         name: userData.name,
@@ -87,7 +89,7 @@
                         loginTime: Date.now(),
                         permissions: ['user_management', 'limited_edit']
                     };
-                    
+
                     // Save admin session
                     await this.saveAdminSession(adminData);
                     
@@ -96,46 +98,10 @@
                     
                     this.logAction('Admin Login', `${userData.name} logged in as admin`);
                     return { success: true, message: 'Admin login successful' };
+
                 } catch (error) {
                     console.error('Admin authentication error:', error);
                     return { success: false, message: error.message };
-                }
-            }
-
-            async loadUserFromDatabase(email) {
-                try {
-                    const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
-                    console.log('Loading user file:', filename);
-                    
-                    const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
-                    
-                    console.log('Response status:', response.status);
-                    
-                    if (!response.ok) {
-                        console.log('Response not ok:', response.status);
-                        return null;
-                    }
-                    
-                    const text = await response.text();
-                    console.log('Response text preview:', text.substring(0, 200));
-                    
-                    if (text.includes('error') || text.includes('not found') || text.trim() === '') {
-                        console.log('User file not found or error in response');
-                        return null;
-                    }
-                    
-                    try {
-                        const userData = JSON.parse(text);
-                        console.log('User data loaded successfully for:', email);
-                        return userData;
-                    } catch (parseError) {
-                        console.error('JSON parse error:', parseError);
-                        console.log('Raw response that failed to parse:', text);
-                        return null;
-                    }
-                } catch (error) {
-                    console.error('Load user from database error:', error);
-                    return null;
                 }
             }
 
@@ -147,8 +113,8 @@
                         ipAddress: 'hidden',
                         userAgent: navigator.userAgent.substring(0, 100)
                     };
-                    
-                    const result = await fetch(config.apiEndpoint, {
+
+                    await fetch(config.apiEndpoint, {
                         method: 'POST',
                         body: new URLSearchParams({
                             folder: config.adminFolder,
@@ -156,8 +122,6 @@
                             content: JSON.stringify(sessionData, null, 2)
                         })
                     });
-                    
-                    console.log('Admin session saved:', result.ok);
                 } catch (error) {
                     console.error('Failed to save admin session:', error);
                 }
@@ -189,7 +153,24 @@
             }
 
             async searchUserByEmail(email) {
-                return await this.loadUserFromDatabase(email);
+                try {
+                    const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
+                    
+                    if (!response.ok) {
+                        return null;
+                    }
+
+                    const text = await response.text();
+                    if (text.includes('error') || text.includes('not found')) {
+                        return null;
+                    }
+
+                    return JSON.parse(text);
+                } catch (error) {
+                    console.error('Search error:', error);
+                    return null;
+                }
             }
 
             displaySearchResults(users) {
@@ -437,6 +418,7 @@
                     } else {
                         showAlert('Failed to update user data', 'error');
                     }
+
                 } catch (error) {
                     console.error('Save user changes error:', error);
                     showAlert('Failed to save changes', 'error');
@@ -551,11 +533,6 @@
                     const password = document.getElementById('loginPassword').value;
                     const adminCode = document.getElementById('adminCode').value.trim();
                     
-                    if (!email || !password || !adminCode) {
-                        showAlert('Please fill in all fields', 'warning');
-                        return;
-                    }
-                    
                     const submitBtn = e.target.querySelector('button[type="submit"]');
                     const originalText = submitBtn.innerHTML;
                     submitBtn.innerHTML = '<div class="spinner"></div>Authenticating...';
@@ -568,17 +545,11 @@
                             hideModal('loginModal');
                             this.showDashboard();
                             showAlert(result.message, 'success');
-                            
-                            // Clear form
-                            document.getElementById('loginEmail').value = '';
-                            document.getElementById('loginPassword').value = '';
-                            document.getElementById('adminCode').value = '';
                         } else {
                             showAlert(result.message, 'error');
                         }
                     } catch (error) {
-                        console.error('Authentication error:', error);
-                        showAlert('Authentication failed. Please check your credentials.', 'error');
+                        showAlert('Authentication failed', 'error');
                     } finally {
                         submitBtn.innerHTML = originalText;
                         submitBtn.disabled = false;
@@ -672,4 +643,4 @@
             } else {
                 document.documentElement.classList.remove('dark');
             }
-        });
+        }); 
