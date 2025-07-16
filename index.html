@@ -13,6 +13,23 @@
     <title>CoinEarner Pro - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
         
@@ -20,7 +37,6 @@
             font-family: 'Poppins', sans-serif;
         }
         
-        /* Glass effect for admin panel */
         .glass {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(25px);
@@ -77,7 +93,7 @@
         }
         
         .modal-content {
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             margin: 1rem;
             max-height: 90vh;
@@ -86,46 +102,12 @@
         
         .hidden { display: none !important; }
         
-        .button-disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-            position: relative;
-        }
-        
-        .button-disabled::after {
-            content: '⏱️';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
-            z-index: 1;
-        }
-        
-        .notification-dot {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            width: 12px;
-            height: 12px;
-            background: #ef4444;
-            border-radius: 50%;
-            border: 2px solid white;
-            animation: notificationBounce 1s infinite;
-        }
-        
-        @keyframes notificationBounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-        
         .spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #3498db;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
             display: inline-block;
             margin-right: 8px;
@@ -136,25 +118,12 @@
             100% { transform: rotate(360deg); }
         }
         
-        .search-input {
-            transition: all 0.3s ease;
-        }
-        
-        .search-input:focus {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-        }
-        
         .user-row {
             transition: all 0.2s ease;
         }
         
         .user-row:hover {
             background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .user-row.selected {
-            background: rgba(59, 130, 246, 0.2);
-            border-left: 3px solid #3b82f6;
         }
         
         .status-badge {
@@ -177,31 +146,57 @@
             color: #ef4444;
         }
         
-        .pending {
-            background: rgba(245, 158, 11, 0.2);
-            color: #f59e0b;
+        .input-base {
+            font-size: 16px;
         }
         
-        .stats-card {
-            transition: all 0.3s ease;
+        .field-readonly {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            opacity: 0.7;
         }
         
-        .stats-card:hover {
-            transform: translateY(-5px);
+        .field-decrease-only {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .field-increase-only {
+            border-left: 4px solid #10b981;
+        }
+        
+        .field-editable {
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .permission-indicator {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+        
+        .decrease-only {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .increase-only {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .editable {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+        
+        .view-only {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
         }
     </style>
 </head>
 <body class="gradient-bg text-white overflow-x-hidden">
-    <!-- Audio elements -->
-    <audio id="coinSound" preload="auto">
-        <source src="https://github.com/MustakimRidoyMR/MustakimRidoyMR.github.io/raw/refs/heads/main/Audio/Sounds_cha-ching-7053.mp3" type="audio/wav/mp3">
-    </audio>
-    <audio id="successSound" preload="auto">
-        <source src="https://github.com/MustakimRidoyMR/MustakimRidoyMR.github.io/raw/refs/heads/main/Audio/success.mp3" type="audio/wav/mp3">
-    </audio>
-    <audio id="errorSound" preload="auto">
-        <source src="https://github.com/MustakimRidoyMR/MustakimRidoyMR.github.io/raw/refs/heads/main/Audio/negative.mp3" type="audio/wav/mp3">
-    </audio>
     <!-- Admin Registration Modal -->
     <div class="modal-overlay" id="adminRegistrationModal">
         <div class="modal-content glass rounded-2xl p-8">
@@ -210,7 +205,7 @@
                     <i class="fas fa-user-shield text-blue-400 mr-2"></i>
                     Admin Registration
                 </h2>
-                <button onclick="hideAdminModal('adminRegistrationModal')" class="text-white/60 hover:text-white">
+                <button onclick="switchToLogin()" class="text-white/60 hover:text-white">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -228,7 +223,7 @@
                     <input type="password" id="adminPassword" required minlength="8" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Create a secure password">
                 </div>
                 <div>
-                    <label class="block text-white/80 text-sm font-medium mb-2">Admin Code</label>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Admin Registration Code</label>
                     <input type="text" id="adminCode" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter admin registration code">
                     <small class="text-white/60 text-xs mt-1">Contact system administrator for the admin code</small>
                 </div>
@@ -237,9 +232,15 @@
                         Register as Admin
                     </button>
                 </div>
+                <div class="text-center">
+                    <button type="button" onclick="switchToLogin()" class="text-blue-400 hover:text-blue-300 text-sm">
+                        Already have an admin account? Login
+                    </button>
+                </div>
             </form>
         </div>
     </div>
+
     <!-- Admin Login Modal -->
     <div class="modal-overlay hidden" id="adminLoginModal">
         <div class="modal-content glass rounded-2xl p-8">
@@ -248,7 +249,7 @@
                     <i class="fas fa-lock text-green-400 mr-2"></i>
                     Admin Login
                 </h2>
-                <button onclick="hideAdminModal('adminLoginModal')" class="text-white/60 hover:text-white">
+                <button onclick="switchToRegister()" class="text-white/60 hover:text-white">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -270,491 +271,783 @@
                         Login as Admin
                     </button>
                 </div>
-                <div class="pt-2 text-center">
-                    <button onclick="showAdminModal('adminRegistrationModal')" class="text-blue-400 hover:text-blue-300 text-sm">
+                <div class="text-center">
+                    <button type="button" onclick="switchToRegister()" class="text-blue-400 hover:text-blue-300 text-sm">
                         Don't have an admin account? Register
                     </button>
                 </div>
             </form>
         </div>
     </div>
-    <!-- User Management Modal -->
-    <div class="modal-overlay hidden" id="userManagementModal">
+
+    <!-- User Edit Modal -->
+    <div class="modal-overlay hidden" id="userEditModal">
         <div class="modal-content glass rounded-2xl p-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">
-                    <i class="fas fa-user-cog text-purple-400 mr-2"></i>
-                    User Management
+                    <i class="fas fa-user-edit text-purple-400 mr-2"></i>
+                    Edit User: <span id="editUserName">User</span>
                 </h2>
-                <button onclick="hideAdminModal('userManagementModal')" class="text-white/60 hover:text-white">
+                <button onclick="hideUserEditModal()" class="text-white/60 hover:text-white">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-white/80 text-sm font-medium mb-2">Search User</label>
-                    <input type="text" id="userSearchInput" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter email or username">
-                </div>
-                <div class="flex space-x-4">
-                    <button id="searchUserBtn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
-                        <i class="fas fa-search mr-2"></i> Search
-                    </button>
-                    <button id="resetUserSearchBtn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-all">
-                        <i class="fas fa-undo mr-2"></i> Reset
-                    </button>
-                </div>
-                <div id="userSearchResults" class="mt-6 hidden">
-                    <h3 class="text-lg font-bold mb-4">User Details</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-white/80">Name:</span>
-                            <span id="userDetailName" class="font-semibold">-</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-white/80">Email:</span>
-                            <span id="userDetailEmail" class="font-semibold">-</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-white/80">Coins:</span>
-                            <span id="userDetailCoins" class="font-semibold">-</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-white/80">Email Verified:</span>
-                            <span id="userDetailVerified" class="status-badge">-</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-white/80">Status:</span>
-                            <span id="userDetailStatus" class="status-badge">-</span>
-                        </div>
-                    </div>
-                    <div class="mt-6 space-y-3">
-                        <h3 class="text-lg font-bold">Admin Actions</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button id="rewardUserBtn" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-all">
-                                <i class="fas fa-gift mr-2"></i> Reward Coins
-                            </button>
-                            <button id="verifyUserBtn" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
-                                <i class="fas fa-check-circle mr-2"></i> Verify Email
-                            </button>
-                            <button id="resetPasswordBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg transition-all">
-                                <i class="fas fa-key mr-2"></i> Reset Password
-                            </button>
-                            <button id="banUserBtn" class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-all">
-                                <i class="fas fa-ban mr-2"></i> Ban User
-                            </button>
-                        </div>
-                    </div>
+            
+            <div class="mb-4 p-4 bg-white/10 rounded-lg">
+                <h3 class="text-sm font-bold mb-2">Permission Legend:</h3>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="permission-indicator decrease-only">DECREASE ONLY</span>
+                    <span class="permission-indicator increase-only">INCREASE ONLY</span>
+                    <span class="permission-indicator editable">EDITABLE</span>
+                    <span class="permission-indicator view-only">VIEW ONLY</span>
                 </div>
             </div>
+
+            <form id="userEditForm" class="space-y-4">
+                <!-- Core Stats (with restrictions) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Coins 
+                            <span class="permission-indicator decrease-only">DECREASE ONLY</span>
+                        </label>
+                        <input type="number" id="editCoins" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-decrease-only" min="0">
+                        <small class="text-red-400 text-xs">Can only decrease, not increase</small>
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Diamonds 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="number" id="editDiamonds" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                        <small class="text-blue-400 text-xs">Can increase or decrease</small>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Earnings (৳)
+                            <span class="permission-indicator decrease-only">DECREASE ONLY</span>
+                        </label>
+                        <input type="number" id="editEarnings" step="0.01" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-decrease-only" min="0">
+                        <small class="text-red-400 text-xs">Can only decrease</small>
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Streak 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="number" id="editStreak" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                        <small class="text-blue-400 text-xs">Can increase or decrease</small>
+                    </div>
+                </div>
+
+                <!-- Activity Status -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Account Status 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <select id="editIsActive" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Preferred Language 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <select id="editPreferredLanguage" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                            <option value="en">English</option>
+                            <option value="bn">Bengali</option>
+                            <option value="hi">Hindi</option>
+                            <option value="ar">Arabic</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Daily Unlock Status -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Daily Games Unlocked 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <select id="editDailyUnlockedGames" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Daily Videos Unlocked 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <select id="editDailyUnlockedVideos" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Additional Stats (Editable) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Total Activities Completed 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="number" id="editTotalActivitiesCompleted" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Login Streak 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="number" id="editLoginStreak" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Achievement Points 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="number" id="editAchievementPoints" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Total Lifetime Earnings (৳)
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="number" id="editTotalEarningsLifetime" step="0.01" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                    </div>
+                </div>
+
+                <!-- Profile Information -->
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">
+                        Bio 
+                        <span class="permission-indicator editable">EDITABLE</span>
+                    </label>
+                    <textarea id="editBio" rows="3" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" placeholder="User bio"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Location 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="text" id="editLocation" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                    </div>
+                    <div>
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            Date of Birth 
+                            <span class="permission-indicator editable">EDITABLE</span>
+                        </label>
+                        <input type="date" id="editDateOfBirth" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                    </div>
+                </div>
+
+                <!-- View Only Fields -->
+                <div class="border-t border-white/20 pt-4">
+                    <h3 class="text-lg font-bold mb-4">View Only Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">
+                                Gender 
+                                <span class="permission-indicator view-only">VIEW ONLY</span>
+                            </label>
+                            <input type="text" id="viewGender" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-readonly" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-white/80 text-sm font-medium mb-2">
+                                Last Unlock Date 
+                                <span class="permission-indicator view-only">VIEW ONLY</span>
+                            </label>
+                            <input type="text" id="viewLastUnlockDate" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-readonly" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-6">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-6 rounded-xl hover:from-green-600 hover:to-teal-700 font-semibold transition-all">
+                        Save Changes
+                    </button>
+                    <button type="button" onclick="hideUserEditModal()" class="flex-1 glass text-white py-3 px-6 rounded-xl hover:bg-white/20 font-semibold transition-all">
+                        Cancel
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-    <!-- Admin Dashboard -->
-    <div class="container mx-auto px-4 py-8">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">
+
+    <!-- Main Admin Dashboard -->
+    <div class="container mx-auto px-4 py-8" id="adminDashboard" style="display: none;">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold mb-4 md:mb-0">
                 <i class="fas fa-shield-alt text-blue-400 mr-2"></i>
                 CoinEarner Pro - Admin Panel
             </h1>
             <div class="flex items-center space-x-4">
-                <div id="adminStatus" class="hidden">
-                    <span class="text-green-400 font-semibold mr-2">
-                        <i class="fas fa-circle text-xs"></i> Admin
-                    </span>
-                    <span id="adminName">Admin</span>
-                    <button onclick="adminLogout()" class="ml-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-green-400 font-semibold">Admin: <span id="currentAdminName">Admin</span></span>
                 </div>
-                <button onclick="showAdminModal('adminLoginModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-all">
-                    <i class="fas fa-sign-in-alt mr-2"></i>Login
-                </button>
-                <button onclick="showAdminModal('adminRegistrationModal')" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-all">
-                    <i class="fas fa-user-plus mr-2"></i>Register
+                <button onclick="adminLogout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
                 </button>
             </div>
         </div>
-        <!-- Admin Dashboard Content (Visible only when logged in) -->
-        <div id="adminDashboard" class="hidden">
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="glass rounded-2xl p-6 stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-users text-3xl text-blue-400 mr-3"></i>
-                            <span class="text-white/70">Total Users</span>
-                        </div>
-                        <i class="fas fa-chart-line text-green-400"></i>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="glass rounded-2xl p-6 admin-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <i class="fas fa-users text-3xl text-blue-400 mb-2"></i>
+                        <p class="text-white/70 text-sm">Total Users</p>
                     </div>
-                    <div class="text-3xl font-bold" id="totalUsers">0</div>
-                    <div class="text-sm text-white/60 mt-2">
-                        <span class="text-green-400"><i class="fas fa-arrow-up mr-1"></i>5%</span> from last week
-                    </div>
-                </div>
-                <div class="glass rounded-2xl p-6 stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-coins text-3xl text-yellow-400 mr-3"></i>
-                            <span class="text-white/70">Total Coins</span>
-                        </div>
-                        <i class="fas fa-chart-pie text-green-400"></i>
-                    </div>
-                    <div class="text-3xl font-bold" id="totalCoins">0</div>
-                    <div class="text-sm text-white/60 mt-2">
-                        <span class="text-green-400"><i class="fas fa-arrow-up mr-1"></i>12%</span> from last week
-                    </div>
-                </div>
-                <div class="glass rounded-2xl p-6 stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-envelope text-3xl text-purple-400 mr-3"></i>
-                            <span class="text-white/70">Verified Users</span>
-                        </div>
-                        <i class="fas fa-check-circle text-green-400"></i>
-                    </div>
-                    <div class="text-3xl font-bold" id="verifiedUsers">0</div>
-                    <div class="text-sm text-white/60 mt-2">
-                        <span class="text-green-400"><i class="fas fa-arrow-up mr-1"></i>8%</span> from last week
-                    </div>
-                </div>
-                <div class="glass rounded-2xl p-6 stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-exclamation-triangle text-3xl text-red-400 mr-3"></i>
-                            <span class="text-white/70">Pending Verification</span>
-                        </div>
-                        <i class="fas fa-clock text-yellow-400"></i>
-                    </div>
-                    <div class="text-3xl font-bold" id="pendingVerification">0</div>
-                    <div class="text-sm text-white/60 mt-2">
-                        <span class="text-red-400"><i class="fas fa-arrow-up mr-1"></i>3%</span> from last week
-                    </div>
+                    <div class="text-2xl font-bold" id="totalUsersCount">0</div>
                 </div>
             </div>
-            <!-- Admin Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="glass rounded-2xl p-6 admin-card">
-                    <div class="flex items-center mb-4">
-                        <i class="fas fa-user-cog text-2xl text-blue-400 mr-3"></i>
-                        <h3 class="text-xl font-bold">User Management</h3>
+            <div class="glass rounded-2xl p-6 admin-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <i class="fas fa-check-circle text-3xl text-green-400 mb-2"></i>
+                        <p class="text-white/70 text-sm">Verified Users</p>
                     </div>
-                    <p class="text-white/80 mb-4">Search, view, and manage user accounts</p>
-                    <button onclick="showAdminModal('userManagementModal')" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
-                        <i class="fas fa-search mr-2"></i> Manage Users
-                    </button>
+                    <div class="text-2xl font-bold" id="verifiedUsersCount">0</div>
                 </div>
-                <div class="glass rounded-2xl p-6 admin-card">
-                    <div class="flex items-center mb-4">
-                        <i class="fas fa-cog text-2xl text-green-400 mr-3"></i>
-                        <h3 class="text-xl font-bold">System Settings</h3>
+            </div>
+            <div class="glass rounded-2xl p-6 admin-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <i class="fas fa-coins text-3xl text-yellow-400 mb-2"></i>
+                        <p class="text-white/70 text-sm">Total Coins</p>
                     </div>
-                    <p class="text-white/80 mb-4">Configure application settings</p>
-                    <button onclick="showSystemSettings()" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-all">
-                        <i class="fas fa-sliders-h mr-2"></i> System Settings
-                    </button>
+                    <div class="text-2xl font-bold" id="totalCoinsSum">0</div>
                 </div>
-                <div class="glass rounded-2xl p-6 admin-card">
-                    <div class="flex items-center mb-4">
-                        <i class="fas fa-chart-bar text-2xl text-purple-400 mr-3"></i>
-                        <h3 class="text-xl font-bold">Analytics</h3>
+            </div>
+            <div class="glass rounded-2xl p-6 admin-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <i class="fas fa-user-shield text-3xl text-purple-400 mb-2"></i>
+                        <p class="text-white/70 text-sm">Active Admins</p>
                     </div>
-                    <p class="text-white/80 mb-4">View application analytics</p>
-                    <button onclick="showAnalytics()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-all">
-                        <i class="fas fa-chart-line mr-2"></i> View Analytics
+                    <div class="text-2xl font-bold" id="activeAdminsCount">1</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Search and Management -->
+        <div class="glass rounded-2xl p-6 mb-8">
+            <h3 class="text-xl font-bold mb-6">
+                <i class="fas fa-search text-blue-400 mr-2"></i>
+                User Search & Management
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="md:col-span-2">
+                    <input type="text" id="userSearchInput" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter email, name, or phone number to search">
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="searchUser()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-all">
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                    <button onclick="clearSearch()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg transition-all">
+                        <i class="fas fa-times mr-2"></i>Clear
                     </button>
                 </div>
             </div>
-            <!-- Recent Activities -->
-            <div class="glass rounded-2xl p-6 mb-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold">
-                        <i class="fas fa-history text-blue-400 mr-2"></i>
-                        Recent Activities
-                    </h3>
-                    <div class="flex space-x-2">
-                        <select id="activityFilter" class="bg-white/20 border border-white/30 rounded-lg px-3 py-1 text-white text-sm">
-                            <option value="all">All Activities</option>
-                            <option value="registration">Registrations</option>
-                            <option value="login">Logins</option>
-                            <option value="earning">Earnings</option>
-                        </select>
-                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition-all">
-                            <i class="fas fa-filter mr-1"></i> Filter
-                        </button>
-                    </div>
-                </div>
+
+            <!-- Search Results -->
+            <div id="searchResults" class="hidden">
+                <h4 class="text-lg font-bold mb-4">Search Results</h4>
                 <div class="overflow-x-auto">
                     <table class="w-full text-white">
                         <thead>
                             <tr class="border-b border-white/20">
-                                <th class="py-3 text-left">User</th>
-                                <th class="py-3 text-left">Activity</th>
-                                <th class="py-3 text-left">IP Address</th>
-                                <th class="py-3 text-left">Time</th>
+                                <th class="py-3 text-left">Name</th>
+                                <th class="py-3 text-left">Email</th>
+                                <th class="py-3 text-left">Coins</th>
                                 <th class="py-3 text-left">Status</th>
+                                <th class="py-3 text-left">Verified</th>
                                 <th class="py-3 text-left">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="activityTable">
-                            <tr class="border-b border-white/10">
-                                <td class="py-3">-</td>
-                                <td class="py-3">-</td>
-                                <td class="py-3">-</td>
-                                <td class="py-3">-</td>
-                                <td class="py-3">-</td>
-                                <td class="py-3">-</td>
-                            </tr>
+                        <tbody id="userResultsTable">
+                            <!-- Results will be populated here -->
                         </tbody>
                     </table>
                 </div>
             </div>
-            <!-- Security Logs -->
-            <div class="glass rounded-2xl p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold">
-                        <i class="fas fa-shield-alt text-red-400 mr-2"></i>
-                        Security Logs
-                    </h3>
-                    <div class="flex space-x-2">
-                        <button id="clearLogsBtn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-all">
-                            <i class="fas fa-trash-alt mr-1"></i> Clear Logs
-                        </button>
-                    </div>
-                </div>
-                <div class="space-y-3" id="securityLogs">
-                    <div class="p-3 bg-white/10 rounded-lg">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <i class="fas fa-shield-alt text-green-400 mr-2"></i>
-                                <span class="font-semibold">System Started</span>
-                            </div>
-                            <span class="text-sm text-white/60">Today, 10:30 AM</span>
-                        </div>
-                        <p class="text-white/80 text-sm mt-1">Admin panel initialized successfully</p>
-                    </div>
-                </div>
+
+            <!-- No Results Message -->
+            <div id="noResults" class="hidden text-center py-8">
+                <i class="fas fa-search text-4xl text-white/50 mb-4"></i>
+                <p class="text-white/70">No users found matching your search criteria</p>
             </div>
         </div>
-    </div>
-    <!-- System Settings Modal -->
-    <div class="modal-overlay hidden" id="systemSettingsModal">
-        <div class="modal-content glass rounded-2xl p-8">
+
+        <!-- Recent Admin Actions Log -->
+        <div class="glass rounded-2xl p-6">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">
-                    <i class="fas fa-cogs text-green-400 mr-2"></i>
-                    System Settings
-                </h2>
-                <button onclick="hideAdminModal('systemSettingsModal')" class="text-white/60 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
+                <h3 class="text-xl font-bold">
+                    <i class="fas fa-history text-green-400 mr-2"></i>
+                    Recent Admin Actions
+                </h3>
+                <button onclick="clearActionLog()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
+                    <i class="fas fa-trash mr-2"></i>Clear Log
                 </button>
             </div>
-            <div class="space-y-6">
-                <div>
-                    <h3 class="text-lg font-bold mb-3">Application Settings</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <label class="font-semibold">Maintenance Mode</label>
-                                <p class="text-sm text-white/60">Enable to put the application in maintenance mode</p>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="maintenanceMode" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                            </label>
+            <div id="adminActionLog" class="space-y-3">
+                <div class="p-3 bg-white/10 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-shield text-blue-400 mr-2"></i>
+                            <span class="font-semibold">Admin panel initialized</span>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <label class="font-semibold">New User Registration</label>
-                                <p class="text-sm text-white/60">Allow new user registrations</p>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="newUserRegistration" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-gray-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                            </label>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <label class="font-semibold">Email Verification Required</label>
-                                <p class="text-sm text-white/60">Require email verification for new users</p>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="emailVerification" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-gray-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
-                            </label>
-                        </div>
+                        <span class="text-sm text-white/60" id="initTime">Just now</span>
                     </div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold mb-3">Earning Settings</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-white/80 text-sm font-medium mb-2">Daily Earning Limit</label>
-                            <div class="flex items-center">
-                                <input type="number" id="dailyEarningLimit" class="w-full px-4 py-2 glass-input rounded-xl text-white placeholder-white/50 input-base" value="100">
-                                <span class="ml-2 text-white/60">coins</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-white/80 text-sm font-medium mb-2">Minimum Withdrawal Amount</label>
-                            <div class="flex items-center">
-                                <input type="number" id="minWithdrawalAmount" class="w-full px-4 py-2 glass-input rounded-xl text-white placeholder-white/50 input-base" value="20">
-                                <span class="ml-2 text-white/60">coins</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold mb-3">Admin Credentials</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-white/80 text-sm font-medium mb-2">Admin Registration Code</label>
-                            <input type="text" id="adminCode" class="w-full px-4 py-2 glass-input rounded-xl text-white placeholder-white/50 input-base" value="ADMIN2025">
-                        </div>
-                    </div>
-                </div>
-                <div class="flex justify-end space-x-3 pt-4">
-                    <button onclick="hideAdminModal('systemSettingsModal')" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-all">
-                        Cancel
-                    </button>
-                    <button onclick="saveSystemSettings()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-all">
-                        Save Settings
-                    </button>
+                    <p class="text-white/80 text-sm mt-1">Admin system started successfully</p>
                 </div>
             </div>
         </div>
     </div>
+
     <!-- Custom Alert Modal -->
-    <div class="modal-overlay hidden" id="adminCustomAlert">
-        <div class="modal-content glass rounded-2xl p-8 text-center">
-            <i id="adminAlertIcon" class="fas fa-info-circle text-5xl mb-4 text-blue-400"></i>
-            <p id="adminAlertMessage" class="text-xl mb-6 text-white">Alert message</p>
-            <button onclick="hideAdminCustomAlert()" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold transition-all">
+    <div class="modal-overlay hidden" id="customAlert">
+        <div class="modal-content glass rounded-2xl p-8 text-center max-w-md">
+            <i id="alertIcon" class="fas fa-info-circle text-5xl mb-4 text-blue-400"></i>
+            <p id="alertMessage" class="text-xl mb-6 text-white">Alert message</p>
+            <button onclick="hideCustomAlert()" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold transition-all">
                 OK
             </button>
         </div>
     </div>
+
     <script>
-        // Enhanced Admin State Management
-        class AdminState {
+        // Admin Management System
+        const config = {
+            apiEndpoint: 'https://script.google.com/macros/s/AKfycbwzeoNtCleXecmpyEpfQMiZxNHizvl84nUipSj1FxTySFVhQrT-3K9Oo_7FiidM5HPL/exec',
+            adminCode: 'ADMIN2025SECURE', // Secret admin registration code
+            appVersion: '3.0.0'
+        };
+
+        class AdminManager {
             constructor() {
-                this.admin = null;
-                this.isAdminMode = false;
-                this.adminCode = "ADMIN2024"; // Default admin registration code
-                this.adminCredentials = {}; // Store admin credentials
+                this.currentAdmin = null;
+                this.isLoggedIn = false;
+                this.actionLog = [];
+                this.loadAdminState();
             }
-            
+
+            // Save admin state to localStorage
             saveAdminState() {
                 localStorage.setItem('adminState', JSON.stringify({
-                    admin: this.admin,
-                    isAdminMode: this.isAdminMode
+                    admin: this.currentAdmin,
+                    isLoggedIn: this.isLoggedIn,
+                    actionLog: this.actionLog
                 }));
             }
-            
+
+            // Load admin state from localStorage
             loadAdminState() {
                 const state = localStorage.getItem('adminState');
                 if (state) {
                     const parsed = JSON.parse(state);
-                    this.admin = parsed.admin;
-                    this.isAdminMode = parsed.isAdminMode;
-                    return true;
+                    this.currentAdmin = parsed.admin;
+                    this.isLoggedIn = parsed.isLoggedIn;
+                    this.actionLog = parsed.actionLog || [];
+                    
+                    if (this.isLoggedIn && this.currentAdmin) {
+                        this.showDashboard();
+                    }
                 }
-                return false;
             }
-            
-            registerAdmin(name, email, password, adminCode) {
-                if (adminCode !== this.adminCode) {
-                    return { success: false, message: "Invalid admin registration code" };
+
+            // Register new admin
+            async registerAdmin(name, email, password, adminCode) {
+                if (adminCode !== config.adminCode) {
+                    return { success: false, message: 'Invalid admin registration code' };
                 }
-                
-                // Generate a simple admin ID
-                const adminId = btoa(email + Date.now()).substring(0, 30);
-                
-                this.adminCredentials[adminId] = {
+
+                // Check if admin already exists
+                const existingAdmin = await this.loadAdminData(email);
+                if (existingAdmin) {
+                    return { success: false, message: 'Admin with this email already exists' };
+                }
+
+                const adminData = {
+                    id: this.generateId(),
                     name,
-                    email,
+                    email: email.toLowerCase(),
                     password: this.hashPassword(password),
                     registeredAt: new Date().toISOString(),
                     lastLogin: null,
-                    permissions: ["user_management", "system_settings", "analytics", "security"]
+                    permissions: ['user_edit', 'user_view', 'stats_view'],
+                    isActive: true
                 };
-                
-                this.admin = {
-                    id: adminId,
-                    name,
-                    email,
-                    permissions: ["user_management", "system_settings", "analytics", "security"]
-                };
-                
-                this.isAdminMode = true;
-                this.saveAdminState();
-                return { success: true, message: "Admin registration successful" };
+
+                const success = await this.saveAdminData(adminData);
+                if (success) {
+                    this.logAction('Admin Registration', `New admin registered: ${email}`);
+                    return { success: true, message: 'Admin registration successful' };
+                } else {
+                    return { success: false, message: 'Failed to save admin data' };
+                }
             }
-            
-            loginAdmin(email, password) {
-                // Find admin by email
-                const adminId = Object.keys(this.adminCredentials).find(
-                    id => this.adminCredentials[id].email === email
-                );
-                
-                if (!adminId) {
-                    return { success: false, message: "Admin not found" };
+
+            // Login admin
+            async loginAdmin(email, password) {
+                const adminData = await this.loadAdminData(email.toLowerCase());
+                if (!adminData) {
+                    return { success: false, message: 'Admin not found' };
                 }
-                
-                // Verify password
-                if (this.adminCredentials[adminId].password !== this.hashPassword(password)) {
-                    return { success: false, message: "Invalid password" };
+
+                if (!adminData.isActive) {
+                    return { success: false, message: 'Admin account is disabled' };
                 }
-                
+
+                if (adminData.password !== this.hashPassword(password)) {
+                    return { success: false, message: 'Invalid password' };
+                }
+
                 // Update last login
-                this.adminCredentials[adminId].lastLogin = new Date().toISOString();
-                
-                this.admin = {
-                    id: adminId,
-                    name: this.adminCredentials[adminId].name,
-                    email,
-                    permissions: this.adminCredentials[adminId].permissions
-                };
-                
-                this.isAdminMode = true;
+                adminData.lastLogin = new Date().toISOString();
+                await this.saveAdminData(adminData);
+
+                this.currentAdmin = adminData;
+                this.isLoggedIn = true;
                 this.saveAdminState();
-                return { success: true, message: "Admin login successful" };
+
+                this.logAction('Admin Login', `Admin logged in: ${email}`);
+                return { success: true, message: 'Login successful' };
             }
-            
+
+            // Logout admin
             logout() {
-                this.admin = null;
-                this.isAdminMode = false;
+                this.logAction('Admin Logout', `Admin logged out: ${this.currentAdmin?.email}`);
+                this.currentAdmin = null;
+                this.isLoggedIn = false;
                 this.saveAdminState();
+                this.hideDashboard();
             }
-            
+
+            // Show admin dashboard
+            showDashboard() {
+                document.getElementById('adminRegistrationModal').classList.add('hidden');
+                document.getElementById('adminLoginModal').classList.add('hidden');
+                document.getElementById('adminDashboard').style.display = 'block';
+                document.getElementById('currentAdminName').textContent = this.currentAdmin.name;
+                this.updateStats();
+                this.updateActionLog();
+            }
+
+            // Hide admin dashboard
+            hideDashboard() {
+                document.getElementById('adminDashboard').style.display = 'none';
+                document.getElementById('adminRegistrationModal').classList.remove('hidden');
+            }
+
+            // Load admin data from server
+            async loadAdminData(email) {
+                try {
+                    const filename = `admin_${email.replace('@', '_at_').replace(/\./g, '_dot_')}.json`;
+                    const response = await fetch(`${config.apiEndpoint}?folder=admins&filename=${filename}`);
+                    
+                    if (!response.ok) return null;
+                    
+                    const text = await response.text();
+                    if (text.includes('error') || text.includes('not found')) return null;
+                    
+                    return JSON.parse(text);
+                } catch (error) {
+                    console.error('Load admin data error:', error);
+                    return null;
+                }
+            }
+
+            // Save admin data to server
+            async saveAdminData(adminData) {
+                try {
+                    const filename = `admin_${adminData.email.replace('@', '_at_').replace(/\./g, '_dot_')}.json`;
+                    const response = await fetch(config.apiEndpoint, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            folder: 'admins',
+                            filename: filename,
+                            content: JSON.stringify(adminData, null, 2)
+                        })
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.error('Save admin data error:', error);
+                    return false;
+                }
+            }
+
+            // Search for users
+            async searchUsers(searchTerm) {
+                try {
+                    // This would typically search through all user files
+                    // For demo, we'll simulate some users
+                    const demoUsers = [
+                        {
+                            name: "Sadiya Rohman",
+                            phone: "+8801783966643",
+                            email: "mustshadia@gmail.com",
+                            address: "Rajshahi",
+                            coins: 10,
+                            diamonds: 0,
+                            earnings: 0,
+                            streak: 1,
+                            isEmailVerified: true,
+                            isActive: true,
+                            gender: "Female",
+                            totalEarningsLifetime: 0.000009999999999999999,
+                            totalActivitiesCompleted: 0,
+                            loginStreak: 1,
+                            achievementPoints: 0,
+                            bio: "",
+                            location: "Rajshahi",
+                            dateOfBirth: "",
+                            preferredLanguage: "en",
+                            dailyUnlockedGames: false,
+                            dailyUnlockedVideos: false,
+                            lastUnlockDate: null
+                        }
+                    ];
+
+                    return demoUsers.filter(user => 
+                        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        user.phone.includes(searchTerm)
+                    );
+                } catch (error) {
+                    console.error('Search users error:', error);
+                    return [];
+                }
+            }
+
+            // Update user data with restrictions
+            async updateUserData(userEmail, updates) {
+                try {
+                    // Load current user data
+                    const currentUser = await this.loadUserData(userEmail);
+                    if (!currentUser) {
+                        return { success: false, message: 'User not found' };
+                    }
+
+                    // Apply restrictions
+                    const restrictedUpdates = this.applyUpdateRestrictions(currentUser, updates);
+                    
+                    // Merge updates
+                    const updatedUser = { ...currentUser, ...restrictedUpdates };
+                    updatedUser.lastUpdated = new Date().toISOString();
+
+                    // Save updated user data
+                    const success = await this.saveUserData(updatedUser);
+                    
+                    if (success) {
+                        this.logAction('User Update', `Updated user: ${userEmail}`);
+                        return { success: true, message: 'User updated successfully' };
+                    } else {
+                        return { success: false, message: 'Failed to save user data' };
+                    }
+                } catch (error) {
+                    console.error('Update user error:', error);
+                    return { success: false, message: 'Update failed' };
+                }
+            }
+
+            // Apply update restrictions based on admin permissions
+            applyUpdateRestrictions(currentUser, updates) {
+                const restrictedUpdates = {};
+
+                // Coins - can only decrease
+                if ('coins' in updates) {
+                    const newCoins = parseInt(updates.coins);
+                    if (newCoins <= currentUser.coins) {
+                        restrictedUpdates.coins = newCoins;
+                    }
+                }
+
+                // Diamonds - can increase or decrease
+                if ('diamonds' in updates) {
+                    restrictedUpdates.diamonds = parseInt(updates.diamonds);
+                }
+
+                // Earnings - can only decrease
+                if ('earnings' in updates) {
+                    const newEarnings = parseFloat(updates.earnings);
+                    if (newEarnings <= currentUser.earnings) {
+                        restrictedUpdates.earnings = newEarnings;
+                    }
+                }
+
+                // Streak - can increase or decrease
+                if ('streak' in updates) {
+                    restrictedUpdates.streak = parseInt(updates.streak);
+                }
+
+                // Boolean fields - editable
+                ['isActive', 'dailyUnlockedGames', 'dailyUnlockedVideos'].forEach(field => {
+                    if (field in updates) {
+                        restrictedUpdates[field] = updates[field] === 'true';
+                    }
+                });
+
+                // String fields - editable
+                ['preferredLanguage', 'bio', 'location', 'dateOfBirth'].forEach(field => {
+                    if (field in updates) {
+                        restrictedUpdates[field] = updates[field];
+                    }
+                });
+
+                // Number fields - editable
+                ['totalActivitiesCompleted', 'loginStreak', 'achievementPoints', 'totalEarningsLifetime'].forEach(field => {
+                    if (field in updates) {
+                        restrictedUpdates[field] = parseFloat(updates[field]) || 0;
+                    }
+                });
+
+                return restrictedUpdates;
+            }
+
+            // Load user data
+            async loadUserData(email) {
+                try {
+                    const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
+                    
+                    if (!response.ok) return null;
+                    
+                    const text = await response.text();
+                    if (text.includes('error') || text.includes('not found')) return null;
+                    
+                    return JSON.parse(text);
+                } catch (error) {
+                    console.error('Load user data error:', error);
+                    return null;
+                }
+            }
+
+            // Save user data
+            async saveUserData(userData) {
+                try {
+                    const filename = userData.email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    const response = await fetch(config.apiEndpoint, {
+                        method: 'POST',
+                        body: new URLSearchParams({
+                            folder: 'users',
+                            filename: filename,
+                            content: JSON.stringify(userData, null, 2)
+                        })
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.error('Save user data error:', error);
+                    return false;
+                }
+            }
+
+            // Update dashboard stats
+            updateStats() {
+                // This would typically fetch real stats from the database
+                // For demo purposes, showing sample data
+                document.getElementById('totalUsersCount').textContent = '1,247';
+                document.getElementById('verifiedUsersCount').textContent = '1,089';
+                document.getElementById('totalCoinsSum').textContent = '245,678';
+                document.getElementById('activeAdminsCount').textContent = '3';
+            }
+
+            // Update action log display
+            updateActionLog() {
+                const logContainer = document.getElementById('adminActionLog');
+                logContainer.innerHTML = '';
+
+                this.actionLog.slice(-10).reverse().forEach(action => {
+                    const logElement = document.createElement('div');
+                    logElement.className = 'p-3 bg-white/10 rounded-lg';
+                    logElement.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-${this.getActionIcon(action.type)} text-blue-400 mr-2"></i>
+                                <span class="font-semibold">${action.type}</span>
+                            </div>
+                            <span class="text-sm text-white/60">${this.formatTime(action.timestamp)}</span>
+                        </div>
+                        <p class="text-white/80 text-sm mt-1">${action.description}</p>
+                    `;
+                    logContainer.appendChild(logElement);
+                });
+            }
+
+            // Log admin action
+            logAction(type, description) {
+                this.actionLog.push({
+                    type,
+                    description,
+                    timestamp: new Date().toISOString(),
+                    admin: this.currentAdmin?.email
+                });
+                this.saveAdminState();
+                this.updateActionLog();
+            }
+
+            // Get icon for action type
+            getActionIcon(type) {
+                const icons = {
+                    'Admin Registration': 'user-plus',
+                    'Admin Login': 'sign-in-alt',
+                    'Admin Logout': 'sign-out-alt',
+                    'User Search': 'search',
+                    'User Update': 'edit'
+                };
+                return icons[type] || 'info-circle';
+            }
+
+            // Format timestamp
+            formatTime(timestamp) {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diff = now - date;
+                const minutes = Math.floor(diff / 60000);
+                const hours = Math.floor(diff / 3600000);
+
+                if (minutes < 1) return 'Just now';
+                if (minutes < 60) return `${minutes}m ago`;
+                if (hours < 24) return `${hours}h ago`;
+                return date.toLocaleDateString();
+            }
+
+            // Generate unique ID
+            generateId() {
+                return 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            // Simple password hashing (use proper hashing in production)
             hashPassword(password) {
-                // Simple hash for demo purposes
-                return btoa(password + this.adminCode);
-            }
-            
-            hasPermission(permission) {
-                return this.admin && this.admin.permissions.includes(permission);
+                return btoa(password + config.adminCode);
             }
         }
-        
-        // Initialize Admin State
-        const adminState = new AdminState();
-        adminState.loadAdminState();
-        
-        // Enhanced Admin UI Functions
-        function showAdminModal(modalId) {
-            document.getElementById(modalId).classList.remove('hidden');
-        }
-        
-        function hideAdminModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
-        
-        function hideAdminCustomAlert() {
-            document.getElementById('adminCustomAlert').classList.add('hidden');
-        }
-        
-        function showAdminCustomAlert(message, type = 'info') {
-            const alertIcon = document.getElementById('adminAlertIcon');
-            const alertMessage = document.getElementById('adminAlertMessage');
+
+        // Initialize admin manager
+        const adminManager = new AdminManager();
+
+        // UI Functions
+        function showCustomAlert(message, type = 'info') {
+            const alertIcon = document.getElementById('alertIcon');
+            const alertMessage = document.getElementById('alertMessage');
+            const customAlert = document.getElementById('customAlert');
             
             alertMessage.textContent = message;
             
@@ -772,353 +1065,316 @@
                     alertIcon.className = 'fas fa-info-circle text-5xl mb-4 text-blue-400';
             }
             
-            document.getElementById('adminCustomAlert').classList.remove('hidden');
+            customAlert.classList.remove('hidden');
         }
-        
-        // Admin Registration Form Handler
-        document.getElementById('adminRegistrationForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('adminName').value.trim();
-            const email = document.getElementById('adminEmail').value.trim().toLowerCase();
-            const password = document.getElementById('adminPassword').value;
-            const adminCode = document.getElementById('adminCode').value;
-            
-            // Validate inputs
-            if (name.length < 2) {
-                showAdminCustomAlert('Name must be at least 2 characters long', 'error');
-                return;
-            }
-            
-            if (!email.includes('@') || !email.includes('.')) {
-                showAdminCustomAlert('Please enter a valid email address', 'error');
-                return;
-            }
-            
-            if (password.length < 8) {
-                showAdminCustomAlert('Password must be at least 8 characters long', 'error');
-                return;
-            }
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="spinner"></div>Processing...';
-            submitBtn.disabled = true;
-            
-            // Register admin
-            const result = adminState.registerAdmin(name, email, password, adminCode);
-            
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                
-                if (result.success) {
-                    showAdminCustomAlert(result.message, 'success');
-                    hideAdminModal('adminRegistrationModal');
-                    showAdminCustomAlert('Admin registration successful! You can now login.', 'success');
-                } else {
-                    showAdminCustomAlert(result.message, 'error');
-                }
-            }, 1500);
-        });
-        
-        // Admin Login Form Handler
-        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('loginAdminEmail').value.trim().toLowerCase();
-            const password = document.getElementById('loginAdminPassword').value;
-            
-            // Validate inputs
-            if (!email.includes('@') || !email.includes('.')) {
-                showAdminCustomAlert('Please enter a valid email address', 'error');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showAdminCustomAlert('Please enter your password', 'error');
-                return;
-            }
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="spinner"></div>Logging in...';
-            submitBtn.disabled = true;
-            
-            // Login admin
-            const result = adminState.loginAdmin(email, password);
-            
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                
-                if (result.success) {
-                    showAdminCustomAlert(result.message, 'success');
-                    hideAdminModal('adminLoginModal');
-                    updateAdminUI();
-                } else {
-                    showAdminCustomAlert(result.message, 'error');
-                }
-            }, 1500);
-        });
-        
-        // User Management Functions
-        function searchUser() {
-            const searchTerm = document.getElementById('userSearchInput').value.trim().toLowerCase();
-            
-            if (!searchTerm) {
-                showAdminCustomAlert('Please enter an email or username to search', 'warning');
-                return;
-            }
-            
-            // In a real implementation, this would query your user database
-            // For demo purposes, we'll simulate a user
-            const demoUsers = [
-                {
-                    id: 'user1',
-                    name: 'John Doe',
-                    email: 'john@example.com',
-                    coins: 1250,
-                    verified: true,
-                    status: 'active'
-                },
-                {
-                    id: 'user2',
-                    name: 'Jane Smith',
-                    email: 'jane@example.com',
-                    coins: 750,
-                    verified: false,
-                    status: 'pending'
-                },
-                {
-                    id: 'user3',
-                    name: 'Bob Johnson',
-                    email: 'bob@example.com',
-                    coins: 2000,
-                    verified: true,
-                    status: 'active'
-                }
-            ];
-            
-            const user = demoUsers.find(u => 
-                u.email.toLowerCase().includes(searchTerm) || 
-                u.name.toLowerCase().includes(searchTerm)
-            );
-            
-            if (user) {
-                document.getElementById('userSearchResults').classList.remove('hidden');
-                document.getElementById('userDetailName').textContent = user.name;
-                document.getElementById('userDetailEmail').textContent = user.email;
-                document.getElementById('userDetailCoins').textContent = user.coins;
-                
-                const verifiedBadge = document.getElementById('userDetailVerified');
-                verifiedBadge.textContent = user.verified ? 'Verified' : 'Unverified';
-                verifiedBadge.className = `status-badge ${user.verified ? 'verified' : 'unverified'}`;
-                
-                const statusBadge = document.getElementById('userDetailStatus');
-                statusBadge.textContent = user.status;
-                statusBadge.className = `status-badge ${user.status === 'active' ? 'verified' : 'pending'}`;
-            } else {
-                showAdminCustomAlert('No user found with that email or username', 'warning');
-            }
+
+        function hideCustomAlert() {
+            document.getElementById('customAlert').classList.add('hidden');
         }
-        
-        function resetUserSearch() {
-            document.getElementById('userSearchInput').value = '';
-            document.getElementById('userSearchResults').classList.add('hidden');
-        }
-        
-        function rewardUser() {
-            const coinsInput = prompt('Enter number of coins to reward:');
-            if (coinsInput && !isNaN(coinsInput) && parseInt(coinsInput) > 0) {
-                const coins = parseInt(coinsInput);
-                showAdminCustomAlert(`User rewarded with ${coins} coins`, 'success');
-                // In real implementation, update user's coin balance
-            } else {
-                showAdminCustomAlert('Please enter a valid number of coins', 'warning');
-            }
-        }
-        
-        function verifyUser() {
-            showAdminCustomAlert('User email verification sent', 'success');
-            // In real implementation, send verification email
-        }
-        
-        function resetUserPassword() {
-            const newPassword = prompt('Enter new password for user:');
-            if (newPassword && newPassword.length >= 6) {
-                showAdminCustomAlert('User password reset successfully', 'success');
-                // In real implementation, update user's password
-            } else {
-                showAdminCustomAlert('Password must be at least 6 characters', 'warning');
-            }
-        }
-        
-        function banUser() {
-            const confirmBan = confirm('Are you sure you want to ban this user?');
-            if (confirmBan) {
-                showAdminCustomAlert('User has been banned', 'success');
-                // In real implementation, update user's status to banned
-            }
-        }
-        
-        // System Settings Functions
-        function showSystemSettings() {
-            if (!adminState.hasPermission('system_settings')) {
-                showAdminCustomAlert('You do not have permission to access system settings', 'error');
-                return;
-            }
-            showAdminModal('systemSettingsModal');
-        }
-        
-        function saveSystemSettings() {
-            // In real implementation, save settings to database
-            showAdminCustomAlert('System settings saved successfully', 'success');
-            hideAdminModal('systemSettingsModal');
-        }
-        
-        // Analytics Functions
-        function showAnalytics() {
-            if (!adminState.hasPermission('analytics')) {
-                showAdminCustomAlert('You do not have permission to view analytics', 'error');
-                return;
-            }
-            showAdminCustomAlert('Analytics feature coming soon!', 'info');
-        }
-        
-        // Admin Logout
-        function adminLogout() {
-            adminState.logout();
-            document.getElementById('adminDashboard').classList.add('hidden');
-            document.getElementById('adminStatus').classList.add('hidden');
+
+        function switchToLogin() {
+            document.getElementById('adminRegistrationModal').classList.add('hidden');
             document.getElementById('adminLoginModal').classList.remove('hidden');
-            showAdminCustomAlert('Admin logged out successfully', 'success');
         }
-        
-        // Update Admin UI
-        function updateAdminUI() {
-            if (adminState.isAdminMode && adminState.admin) {
-                document.getElementById('adminStatus').classList.remove('hidden');
-                document.getElementById('adminName').textContent = adminState.admin.name;
-                document.getElementById('adminDashboard').classList.remove('hidden');
-                document.getElementById('adminLoginModal').classList.add('hidden');
-                document.getElementById('adminRegistrationModal').classList.add('hidden');
-                
-                // Load sample data for demo
-                loadSampleData();
-            } else {
-                document.getElementById('adminDashboard').classList.add('hidden');
-                document.getElementById('adminStatus').classList.add('hidden');
-                document.getElementById('adminLoginModal').classList.remove('hidden');
+
+        function switchToRegister() {
+            document.getElementById('adminLoginModal').classList.add('hidden');
+            document.getElementById('adminRegistrationModal').classList.remove('hidden');
+        }
+
+        // Search users function
+        async function searchUser() {
+            const searchTerm = document.getElementById('userSearchInput').value.trim();
+            if (!searchTerm) {
+                showCustomAlert('Please enter a search term', 'warning');
+                return;
+            }
+
+            const searchBtn = document.querySelector('#userSearchInput').parentElement.nextElementSibling.querySelector('button');
+            const originalText = searchBtn.innerHTML;
+            searchBtn.innerHTML = '<div class="spinner"></div>Searching...';
+            searchBtn.disabled = true;
+
+            try {
+                const users = await adminManager.searchUsers(searchTerm);
+                displaySearchResults(users);
+                adminManager.logAction('User Search', `Searched for: ${searchTerm}`);
+            } catch (error) {
+                showCustomAlert('Search failed', 'error');
+            } finally {
+                searchBtn.innerHTML = originalText;
+                searchBtn.disabled = false;
             }
         }
-        
-        // Load Sample Data for Demo
-        function loadSampleData() {
-            // Update stats
-            document.getElementById('totalUsers').textContent = '1,245';
-            document.getElementById('totalCoins').textContent = '125,678';
-            document.getElementById('verifiedUsers').textContent = '1,089';
-            document.getElementById('pendingVerification').textContent = '156';
-            
-            // Load sample activities
-            const activities = [
-                { user: 'john@example.com', activity: 'Registered', ip: '192.168.1.1', time: '10:30 AM', status: 'success' },
-                { user: 'jane@example.com', activity: 'Logged in', ip: '192.168.1.2', time: '11:15 AM', status: 'success' },
-                { user: 'bob@example.com', activity: 'Earned 50 coins', ip: '192.168.1.3', time: '11:45 AM', status: 'success' },
-                { user: 'alice@example.com', activity: 'Attempted login', ip: '192.168.1.4', time: '12:05 PM', status: 'error' },
-                { user: 'mike@example.com', activity: 'Completed survey', ip: '192.168.1.5', time: '12:30 PM', status: 'success' }
-            ];
-            
-            const activityTable = document.getElementById('activityTable');
-            activityTable.innerHTML = '';
-            
-            activities.forEach(activity => {
+
+        function displaySearchResults(users) {
+            const resultsContainer = document.getElementById('searchResults');
+            const noResultsContainer = document.getElementById('noResults');
+            const tableBody = document.getElementById('userResultsTable');
+
+            if (users.length === 0) {
+                resultsContainer.classList.add('hidden');
+                noResultsContainer.classList.remove('hidden');
+                return;
+            }
+
+            noResultsContainer.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+
+            tableBody.innerHTML = '';
+            users.forEach(user => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-white/10 user-row';
-                
                 row.innerHTML = `
-                    <td class="py-3">${activity.user}</td>
-                    <td class="py-3">${activity.activity}</td>
-                    <td class="py-3">${activity.ip}</td>
-                    <td class="py-3">${activity.time}</td>
+                    <td class="py-3">${user.name}</td>
+                    <td class="py-3">${user.email}</td>
+                    <td class="py-3">${user.coins || 0}</td>
                     <td class="py-3">
-                        <span class="status-badge ${activity.status === 'success' ? 'verified' : 'unverified'}">
-                            ${activity.status}
+                        <span class="status-badge ${user.isActive ? 'verified' : 'unverified'}">
+                            ${user.isActive ? 'Active' : 'Inactive'}
                         </span>
                     </td>
                     <td class="py-3">
-                        <button class="text-blue-400 hover:text-blue-300 mr-2" title="View Details">
-                            <i class="fas fa-eye"></i>
+                        <span class="status-badge ${user.isEmailVerified ? 'verified' : 'unverified'}">
+                            ${user.isEmailVerified ? 'Verified' : 'Unverified'}
+                        </span>
+                    </td>
+                    <td class="py-3">
+                        <button onclick="editUser('${user.email}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all mr-2">
+                            <i class="fas fa-edit mr-1"></i>Edit
                         </button>
-                        <button class="text-red-400 hover:text-red-300" title="Delete Record">
-                            <i class="fas fa-trash"></i>
+                        <button onclick="viewUser('${user.email}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-all">
+                            <i class="fas fa-eye mr-1"></i>View
                         </button>
                     </td>
                 `;
-                
-                activityTable.appendChild(row);
-            });
-            
-            // Load sample security logs
-            const securityLogs = [
-                { type: 'system', message: 'Admin panel initialized', time: 'Today, 10:30 AM' },
-                { type: 'login', message: 'Admin login: john@example.com', time: 'Today, 10:35 AM' },
-                { type: 'user', message: 'User registration: jane@example.com', time: 'Today, 11:15 AM' },
-                { type: 'earning', message: 'User earned 50 coins: bob@example.com', time: 'Today, 11:45 AM' },
-                { type: 'security', message: 'Failed login attempt: alice@example.com', time: 'Today, 12:05 PM' }
-            ];
-            
-            const logsContainer = document.getElementById('securityLogs');
-            logsContainer.innerHTML = '';
-            
-            securityLogs.forEach(log => {
-                const logElement = document.createElement('div');
-                logElement.className = 'p-3 bg-white/10 rounded-lg';
-                
-                let iconClass = 'fas fa-info-circle text-blue-400';
-                if (log.type === 'login') iconClass = 'fas fa-sign-in-alt text-green-400';
-                if (log.type === 'user') iconClass = 'fas fa-user-plus text-yellow-400';
-                if (log.type === 'earning') iconClass = 'fas fa-coins text-yellow-400';
-                if (log.type === 'security') iconClass = 'fas fa-shield-alt text-red-400';
-                
-                logElement.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center">
-                            <i class="${iconClass} mr-2"></i>
-                            <span class="font-semibold">${log.message}</span>
-                        </div>
-                        <span class="text-sm text-white/60">${log.time}</span>
-                    </div>
-                    <p class="text-white/80 text-sm mt-1">${log.type} event</p>
-                `;
-                
-                logsContainer.appendChild(logElement);
+                tableBody.appendChild(row);
             });
         }
-        
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            // Setup admin registration and login forms
-            document.getElementById('searchUserBtn').addEventListener('click', searchUser);
-            document.getElementById('resetUserSearchBtn').addEventListener('click', resetUserSearch);
-            
-            // Setup user management buttons
-            document.getElementById('rewardUserBtn').addEventListener('click', rewardUser);
-            document.getElementById('verifyUserBtn').addEventListener('click', verifyUser);
-            document.getElementById('resetPasswordBtn').addEventListener('click', resetUserPassword);
-            document.getElementById('banUserBtn').addEventListener('click', banUser);
-            
-            // Setup system settings buttons
-            document.getElementById('clearLogsBtn').addEventListener('click', function() {
-                if (confirm('Are you sure you want to clear all security logs?')) {
-                    document.getElementById('securityLogs').innerHTML = '';
-                    showAdminCustomAlert('Security logs cleared', 'success');
+
+        function clearSearch() {
+            document.getElementById('userSearchInput').value = '';
+            document.getElementById('searchResults').classList.add('hidden');
+            document.getElementById('noResults').classList.add('hidden');
+        }
+
+        // Edit user function
+        async function editUser(email) {
+            const userData = await adminManager.loadUserData(email);
+            if (!userData) {
+                showCustomAlert('User not found', 'error');
+                return;
+            }
+
+            // Populate edit form
+            document.getElementById('editUserName').textContent = userData.name;
+            document.getElementById('editCoins').value = userData.coins || 0;
+            document.getElementById('editDiamonds').value = userData.diamonds || 0;
+            document.getElementById('editEarnings').value = userData.earnings || 0;
+            document.getElementById('editStreak').value = userData.streak || 0;
+            document.getElementById('editIsActive').value = userData.isActive ? 'true' : 'false';
+            document.getElementById('editPreferredLanguage').value = userData.preferredLanguage || 'en';
+            document.getElementById('editDailyUnlockedGames').value = userData.dailyUnlockedGames ? 'true' : 'false';
+            document.getElementById('editDailyUnlockedVideos').value = userData.dailyUnlockedVideos ? 'true' : 'false';
+            document.getElementById('editTotalActivitiesCompleted').value = userData.totalActivitiesCompleted || 0;
+            document.getElementById('editLoginStreak').value = userData.loginStreak || 0;
+            document.getElementById('editAchievementPoints').value = userData.achievementPoints || 0;
+            document.getElementById('editTotalEarningsLifetime').value = userData.totalEarningsLifetime || 0;
+            document.getElementById('editBio').value = userData.bio || '';
+            document.getElementById('editLocation').value = userData.location || '';
+            document.getElementById('editDateOfBirth').value = userData.dateOfBirth || '';
+
+            // View only fields
+            document.getElementById('viewGender').value = userData.gender || 'Not specified';
+            document.getElementById('viewLastUnlockDate').value = userData.lastUnlockDate || 'Never';
+
+            // Store current user email for saving
+            document.getElementById('userEditForm').setAttribute('data-user-email', email);
+
+            document.getElementById('userEditModal').classList.remove('hidden');
+        }
+
+        function hideUserEditModal() {
+            document.getElementById('userEditModal').classList.add('hidden');
+        }
+
+        function viewUser(email) {
+            editUser(email);
+            // Make all fields readonly for view mode
+            const inputs = document.querySelectorAll('#userEditForm input, #userEditForm select, #userEditForm textarea');
+            inputs.forEach(input => {
+                if (!input.readOnly) {
+                    input.readOnly = true;
+                    input.classList.add('field-readonly');
                 }
             });
-            
-            // Initialize admin UI based on state
-            updateAdminUI();
+            document.getElementById('userEditForm').querySelector('button[type="submit"]').style.display = 'none';
+        }
+
+        function adminLogout() {
+            adminManager.logout();
+            showCustomAlert('Logged out successfully', 'success');
+        }
+
+        function clearActionLog() {
+            if (showConfirmDialog('Are you sure you want to clear the action log?', () => {
+                adminManager.actionLog = [];
+                adminManager.saveAdminState();
+                adminManager.updateActionLog();
+                showCustomAlert('Action log cleared', 'success');
+            })) {
+                // Confirmation handled in callback
+            }
+        }
+
+        // Custom confirm dialog (since confirm() is not allowed)
+        function showConfirmDialog(message, onConfirm) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content glass rounded-2xl p-8 text-center max-w-md">
+                    <i class="fas fa-question-circle text-5xl mb-4 text-yellow-400"></i>
+                    <p class="text-xl mb-6 text-white">${message}</p>
+                    <div class="flex space-x-3">
+                        <button onclick="this.closest('.modal-overlay').remove()" class="flex-1 glass text-white py-3 px-6 rounded-xl hover:bg-white/20 font-semibold transition-all">Cancel</button>
+                        <button onclick="this.closest('.modal-overlay').remove(); onConfirm()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-xl font-semibold transition-all">Confirm</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            return true;
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Admin registration form
+            document.getElementById('adminRegistrationForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('adminName').value.trim();
+                const email = document.getElementById('adminEmail').value.trim();
+                const password = document.getElementById('adminPassword').value;
+                const adminCode = document.getElementById('adminCode').value;
+
+                if (name.length < 2) {
+                    showCustomAlert('Name must be at least 2 characters', 'error');
+                    return;
+                }
+
+                if (password.length < 8) {
+                    showCustomAlert('Password must be at least 8 characters', 'error');
+                    return;
+                }
+
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<div class="spinner"></div>Registering...';
+                submitBtn.disabled = true;
+
+                try {
+                    const result = await adminManager.registerAdmin(name, email, password, adminCode);
+                    
+                    if (result.success) {
+                        showCustomAlert(result.message, 'success');
+                        switchToLogin();
+                    } else {
+                        showCustomAlert(result.message, 'error');
+                    }
+                } catch (error) {
+                    showCustomAlert('Registration failed', 'error');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Admin login form
+            document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginAdminEmail').value.trim();
+                const password = document.getElementById('loginAdminPassword').value;
+
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<div class="spinner"></div>Logging in...';
+                submitBtn.disabled = true;
+
+                try {
+                    const result = await adminManager.loginAdmin(email, password);
+                    
+                    if (result.success) {
+                        showCustomAlert(result.message, 'success');
+                        setTimeout(() => {
+                            hideCustomAlert();
+                            adminManager.showDashboard();
+                        }, 1500);
+                    } else {
+                        showCustomAlert(result.message, 'error');
+                    }
+                } catch (error) {
+                    showCustomAlert('Login failed', 'error');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // User edit form
+            document.getElementById('userEditForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const userEmail = this.getAttribute('data-user-email');
+                const formData = new FormData(this);
+                const updates = {};
+
+                // Collect form data
+                ['coins', 'diamonds', 'earnings', 'streak', 'isActive', 'preferredLanguage', 
+                 'dailyUnlockedGames', 'dailyUnlockedVideos', 'totalActivitiesCompleted', 
+                 'loginStreak', 'achievementPoints', 'totalEarningsLifetime', 'bio', 
+                 'location', 'dateOfBirth'].forEach(field => {
+                    const element = document.getElementById('edit' + field.charAt(0).toUpperCase() + field.slice(1));
+                    if (element) {
+                        updates[field] = element.value;
+                    }
+                });
+
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<div class="spinner"></div>Saving...';
+                submitBtn.disabled = true;
+
+                try {
+                    const result = await adminManager.updateUserData(userEmail, updates);
+                    
+                    if (result.success) {
+                        showCustomAlert(result.message, 'success');
+                        hideUserEditModal();
+                    } else {
+                        showCustomAlert(result.message, 'error');
+                    }
+                } catch (error) {
+                    showCustomAlert('Update failed', 'error');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Initialize timestamp
+            document.getElementById('initTime').textContent = new Date().toLocaleString();
+        });
+
+        // Dark mode support
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         });
     </script>
 </body>
