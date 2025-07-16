@@ -423,6 +423,62 @@
                 }
             }
 
+             // In admin panel - update authenticateAdmin function
+async authenticateAdmin(email, password, adminCode) {
+    try {
+        // First check if admin code is valid
+        if (!this.adminCodes.includes(adminCode)) {
+            throw new Error('Invalid admin code');
+        }
+        
+        // Check if user exists in main app database
+        const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+        const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('User not found in system');
+            }
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        const text = await response.text();
+        if (text.includes('error') || text.includes('not found')) {
+            throw new Error('User not found in system');
+        }
+        
+        const userData = JSON.parse(text);
+        
+        // Verify password
+        if (userData.password !== password) {
+            throw new Error('Invalid password');
+        }
+        
+        // Check if user is already an admin
+        const adminData = {
+            email: userData.email,
+            name: userData.name,
+            phone: userData.phone,
+            adminCode: adminCode,
+            loginTime: Date.now(),
+            permissions: ['user_management', 'limited_edit']
+        };
+        
+        // Save admin session
+        await this.saveAdminSession(adminData);
+        
+        this.currentAdmin = adminData;
+        localStorage.setItem('adminSession', JSON.stringify(adminData));
+        
+        this.logAction('Admin Login', `${userData.name} logged in as admin`);
+        return { success: true, message: 'Admin login successful' };
+    } catch (error) {
+        console.error('Admin authentication error:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+             /*
             async authenticateAdmin(email, password, adminCode) {
                 try {
                     // First check if admin code is valid
@@ -474,7 +530,7 @@
                     return { success: false, message: error.message };
                 }
             }
-
+*/
             async saveAdminSession(adminData) {
                 try {
                     const sessionData = {
