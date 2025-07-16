@@ -380,7 +380,7 @@
             constructor() {
                 this.currentAdmin = null;
                 this.selectedUser = null;
-                this.adminCodes = [];
+                this.adminCodes = ['ADMIN2025', 'CEPADMIN', 'MANAGER123'];
                 this.actionHistory = [];
                 this.init();
             }
@@ -426,7 +426,7 @@
             async authenticateAdmin(email, password, adminCode) {
                 try {
                     // First check if admin code is valid
-                    if (!this.adminCodes.includes(adminCode)) {
+                    if (!this.adminCodes.includes(adminCode) || !this.adminCodes === 'ADMIN2025') {
                         throw new Error('Invalid admin code');
                     }
 
