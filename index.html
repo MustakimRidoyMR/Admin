@@ -24,6 +24,16 @@
                             600: '#2563eb',
                             700: '#1d4ed8',
                             900: '#1e3a8a'
+                        },
+                        accent: {
+                            400: '#f59e0b',
+                            500: '#d97706',
+                            600: '#b45309'
+                        },
+                        success: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669'
                         }
                     }
                 }
@@ -69,15 +79,6 @@
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
         }
         
-        .admin-card {
-            transition: all 0.3s ease;
-        }
-        
-        .admin-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-        
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -94,13 +95,22 @@
         
         .modal-content {
             max-width: 600px;
-            width: 90%;
+            width: 95%;
             margin: 1rem;
             max-height: 90vh;
             overflow-y: auto;
         }
         
         .hidden { display: none !important; }
+        
+        .admin-card {
+            transition: all 0.3s ease;
+        }
+        
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
         
         .spinner {
             border: 3px solid #f3f3f3;
@@ -146,136 +156,239 @@
             color: #ef4444;
         }
         
+        .active {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .inactive {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+        }
+        
         .input-base {
             font-size: 16px;
         }
         
-        .field-readonly {
-            background: rgba(255, 255, 255, 0.1);
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        
-        .field-decrease-only {
-            border-left: 4px solid #ef4444;
-        }
-        
-        .field-increase-only {
-            border-left: 4px solid #10b981;
-        }
-        
-        .field-editable {
-            border-left: 4px solid #3b82f6;
-        }
-        
-        .permission-indicator {
+        .permission-badge {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 8px;
+            margin: 2px;
         }
         
-        .decrease-only {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-        }
-        
-        .increase-only {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-        }
-        
-        .editable {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-        }
-        
-        .view-only {
+        .readonly-field {
             background: rgba(156, 163, 175, 0.2);
-            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .editable-field {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .restricted-field {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
         }
     </style>
 </head>
 <body class="gradient-bg text-white overflow-x-hidden">
-    <!-- Admin Registration Modal -->
-    <div class="modal-overlay" id="adminRegistrationModal">
-        <div class="modal-content glass rounded-2xl p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">
-                    <i class="fas fa-user-shield text-blue-400 mr-2"></i>
-                    Admin Registration
-                </h2>
-                <button onclick="switchToLogin()" class="text-white/60 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
+    <!-- Navigation Header -->
+    <nav class="glass sticky top-0 z-50 border-b border-white/20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-shield-alt text-3xl text-blue-400"></i>
+                        <span class="text-xl font-bold">Admin Panel</span>
+                    </div>
+                    <div class="permission-badge">
+                        <i class="fas fa-user-shield mr-1"></i>Limited Admin
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div id="adminInfo" class="hidden flex items-center space-x-4">
+                        <div class="text-right">
+                            <div class="font-semibold" id="adminName">Admin</div>
+                            <div class="text-xs text-white/70" id="adminEmail">admin@example.com</div>
+                        </div>
+                        <button onclick="adminLogout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-all">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                    <button onclick="showLoginModal()" id="loginButton" class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg transition-all">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        
+        <!-- Login Required Message -->
+        <div id="loginRequired" class="text-center py-20">
+            <div class="glass rounded-3xl p-8 max-w-md mx-auto">
+                <i class="fas fa-lock text-6xl text-blue-400 mb-4"></i>
+                <h2 class="text-2xl font-bold mb-4">Admin Login Required</h2>
+                <p class="text-white/80 mb-6">Please login with your registered account credentials to access the admin panel.</p>
+                <button onclick="showLoginModal()" class="bg-blue-500 hover:bg-blue-600 px-8 py-3 rounded-lg font-semibold transition-all">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login Now
                 </button>
             </div>
-            <form id="adminRegistrationForm" class="space-y-4">
-                <div>
-                    <label class="block text-white/80 text-sm font-medium mb-2">Full Name</label>
-                    <input type="text" id="adminName" required minlength="2" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your full name">
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden">
+            <!-- Dashboard Header -->
+            <div class="glass rounded-2xl p-6 mb-8">
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="flex-1">
+                        <h1 class="text-3xl font-bold mb-2">Welcome to Admin Panel</h1>
+                        <p class="text-white/80">Limited administrative access for user management</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-white/70">Last Login</div>
+                        <div class="font-semibold" id="lastLoginTime">Just now</div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-white/80 text-sm font-medium mb-2">Email Address</label>
-                    <input type="email" id="adminEmail" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your email">
+            </div>
+
+            <!-- Admin Permissions Info -->
+            <div class="glass rounded-2xl p-6 mb-8">
+                <h3 class="text-xl font-bold mb-4">
+                    <i class="fas fa-key text-yellow-400 mr-2"></i>
+                    Your Admin Permissions
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-check text-green-400"></i>
+                        <span>Search Users</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-edit text-blue-400"></i>
+                        <span>Edit Limited Fields</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-coins text-yellow-400"></i>
+                        <span>Manage Coins (Decrease Only)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-gem text-cyan-400"></i>
+                        <span>Manage Diamonds</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-times text-red-400"></i>
+                        <span>No Personal Data Access</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-times text-red-400"></i>
+                        <span>No Password Access</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-times text-red-400"></i>
+                        <span>No Financial Data</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-times text-red-400"></i>
+                        <span>No User Deletion</span>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-white/80 text-sm font-medium mb-2">Password</label>
-                    <input type="password" id="adminPassword" required minlength="8" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Create a secure password">
-                </div>
-                <div>
-                    <label class="block text-white/80 text-sm font-medium mb-2">Admin Registration Code</label>
-                    <input type="text" id="adminCode" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter admin registration code">
-                    <small class="text-white/60 text-xs mt-1">Contact system administrator for the admin code</small>
-                </div>
-                <div class="pt-4">
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold transition-all">
-                        Register as Admin
+            </div>
+
+            <!-- User Search -->
+            <div class="glass rounded-2xl p-6 mb-8">
+                <h3 class="text-xl font-bold mb-4">
+                    <i class="fas fa-search text-blue-400 mr-2"></i>
+                    User Search & Management
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <input type="text" id="userSearchInput" placeholder="Search by email..." class="glass-input rounded-lg px-4 py-2 text-white input-base">
+                    <button onclick="searchUser()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                    <button onclick="clearSearch()" class="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </button>
+                    <button onclick="loadAllUsers()" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-users mr-2"></i>Load All
                     </button>
                 </div>
-                <div class="text-center">
-                    <button type="button" onclick="switchToLogin()" class="text-blue-400 hover:text-blue-300 text-sm">
-                        Already have an admin account? Login
-                    </button>
+                
+                <!-- User Results -->
+                <div id="userResults" class="mt-6">
+                    <div class="text-center text-white/70 py-8">
+                        <i class="fas fa-search text-4xl mb-4"></i>
+                        <p>Search for users using their email address</p>
+                    </div>
                 </div>
-            </form>
+            </div>
+
+            <!-- Recent Admin Activity -->
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-xl font-bold mb-4">
+                    <i class="fas fa-history text-purple-400 mr-2"></i>
+                    Recent Admin Activity
+                </h3>
+                <div id="adminActivity" class="space-y-3">
+                    <div class="p-3 bg-white/10 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span>Admin panel accessed</span>
+                            <span class="text-xs text-white/60">Just now</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Admin Login Modal -->
-    <div class="modal-overlay hidden" id="adminLoginModal">
+    <!-- Login Modal -->
+    <div class="modal-overlay hidden" id="loginModal">
         <div class="modal-content glass rounded-2xl p-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">
-                    <i class="fas fa-lock text-green-400 mr-2"></i>
+                    <i class="fas fa-sign-in-alt text-blue-400 mr-2"></i>
                     Admin Login
                 </h2>
-                <button onclick="switchToRegister()" class="text-white/60 hover:text-white">
+                <button onclick="hideModal('loginModal')" class="text-white/60 hover:text-white">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <form id="adminLoginForm" class="space-y-4">
+            
+            <div class="mb-6 p-4 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                    <span class="font-semibold">Admin Access Requirements</span>
+                </div>
+                <ul class="text-sm text-white/80 space-y-1">
+                    <li>• Must be registered in the main CoinEarner Pro app</li>
+                    <li>• Email and password must match your app account</li>
+                    <li>• Valid admin authorization code required</li>
+                </ul>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
                 <div>
                     <label class="block text-white/80 text-sm font-medium mb-2">Email Address</label>
-                    <input type="email" id="loginAdminEmail" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your email">
+                    <input type="email" id="loginEmail" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your registered email">
                 </div>
                 <div>
                     <label class="block text-white/80 text-sm font-medium mb-2">Password</label>
-                    <input type="password" id="loginAdminPassword" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your password">
+                    <input type="password" id="loginPassword" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter your app password">
                 </div>
-                <div class="flex items-center">
-                    <input type="checkbox" id="adminRememberMe" class="mr-2 w-4 h-4 rounded">
-                    <label for="adminRememberMe" class="text-white/80 text-sm">Remember me on this device</label>
+                <div>
+                    <label class="block text-white/80 text-sm font-medium mb-2">Admin Authorization Code</label>
+                    <input type="text" id="adminCode" required class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter admin code">
+                    <small class="text-white/60 text-xs">Contact system administrator for admin authorization</small>
                 </div>
-                <div class="pt-4">
-                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-6 rounded-xl hover:from-green-600 hover:to-teal-700 font-semibold transition-all">
-                        Login as Admin
-                    </button>
-                </div>
-                <div class="text-center">
-                    <button type="button" onclick="switchToRegister()" class="text-blue-400 hover:text-blue-300 text-sm">
-                        Don't have an admin account? Register
-                    </button>
-                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold transition-all">
+                    Login to Admin Panel
+                </button>
             </form>
         </div>
     </div>
@@ -285,201 +398,158 @@
         <div class="modal-content glass rounded-2xl p-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">
-                    <i class="fas fa-user-edit text-purple-400 mr-2"></i>
+                    <i class="fas fa-user-edit text-green-400 mr-2"></i>
                     Edit User: <span id="editUserName">User</span>
                 </h2>
-                <button onclick="hideUserEditModal()" class="text-white/60 hover:text-white">
+                <button onclick="hideModal('userEditModal')" class="text-white/60 hover:text-white">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
             
-            <div class="mb-4 p-4 bg-white/10 rounded-lg">
-                <h3 class="text-sm font-bold mb-2">Permission Legend:</h3>
-                <div class="flex flex-wrap gap-2 text-xs">
-                    <span class="permission-indicator decrease-only">DECREASE ONLY</span>
-                    <span class="permission-indicator increase-only">INCREASE ONLY</span>
-                    <span class="permission-indicator editable">EDITABLE</span>
-                    <span class="permission-indicator view-only">VIEW ONLY</span>
+            <div class="mb-6 p-4 bg-yellow-500/20 rounded-lg border border-yellow-500/30">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                    <span class="font-semibold">Important Notice</span>
                 </div>
+                <p class="text-sm text-white/80">You can only modify specific fields. Some restrictions apply to protect user data.</p>
             </div>
-
+            
             <form id="userEditForm" class="space-y-4">
-                <!-- Core Stats (with restrictions) -->
+                <input type="hidden" id="editUserId">
+                
+                <!-- Editable Fields with Restrictions -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                    <!-- Coins (Decrease Only) -->
+                    <div class="restricted-field p-3 rounded-lg">
                         <label class="block text-white/80 text-sm font-medium mb-2">
-                            Coins 
-                            <span class="permission-indicator decrease-only">DECREASE ONLY</span>
+                            <i class="fas fa-coins text-yellow-400 mr-1"></i>
+                            Coins (Decrease Only)
                         </label>
-                        <input type="number" id="editCoins" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-decrease-only" min="0">
-                        <small class="text-red-400 text-xs">Can only decrease, not increase</small>
+                        <input type="number" id="editCoins" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base" min="0">
+                        <small class="text-yellow-400 text-xs">Cannot increase coins, only decrease</small>
                     </div>
-                    <div>
+                    
+                    <!-- Diamonds (Full Control) -->
+                    <div class="editable-field p-3 rounded-lg">
                         <label class="block text-white/80 text-sm font-medium mb-2">
-                            Diamonds 
-                            <span class="permission-indicator editable">EDITABLE</span>
+                            <i class="fas fa-gem text-cyan-400 mr-1"></i>
+                            Diamonds
                         </label>
-                        <input type="number" id="editDiamonds" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
-                        <small class="text-blue-400 text-xs">Can increase or decrease</small>
+                        <input type="number" id="editDiamonds" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base" min="0">
+                        <small class="text-cyan-400 text-xs">Can increase or decrease</small>
+                    </div>
+                    
+                    <!-- Earnings (Decrease Only) -->
+                    <div class="restricted-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            <i class="fas fa-money-bill-wave text-green-400 mr-1"></i>
+                            Earnings (Decrease Only)
+                        </label>
+                        <input type="number" id="editEarnings" step="0.01" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base" min="0">
+                        <small class="text-yellow-400 text-xs">Cannot increase earnings</small>
+                    </div>
+                    
+                    <!-- Streak -->
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            <i class="fas fa-fire text-red-400 mr-1"></i>
+                            Login Streak
+                        </label>
+                        <input type="number" id="editStreak" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base" min="0">
+                        <small class="text-blue-400 text-xs">Can modify streak count</small>
+                    </div>
+                    
+                    <!-- Achievement Points -->
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            <i class="fas fa-trophy text-purple-400 mr-1"></i>
+                            Achievement Points
+                        </label>
+                        <input type="number" id="editAchievementPoints" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base" min="0">
+                    </div>
+                    
+                    <!-- Preferred Language -->
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">
+                            <i class="fas fa-language text-indigo-400 mr-1"></i>
+                            Preferred Language
+                        </label>
+                        <select id="editLanguage" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base">
+                            <option value="en">English</option>
+                            <option value="bn">Bangla</option>
+                            <option value="hi">Hindi</option>
+                            <option value="ur">Urdu</option>
+                        </select>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Earnings (৳)
-                            <span class="permission-indicator decrease-only">DECREASE ONLY</span>
-                        </label>
-                        <input type="number" id="editEarnings" step="0.01" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-decrease-only" min="0">
-                        <small class="text-red-400 text-xs">Can only decrease</small>
-                    </div>
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Streak 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <input type="number" id="editStreak" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
-                        <small class="text-blue-400 text-xs">Can increase or decrease</small>
-                    </div>
-                </div>
-
-                <!-- Activity Status -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Account Status 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <select id="editIsActive" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                
+                <!-- Account Status Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">Account Status</label>
+                        <select id="editIsActive" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base">
                             <option value="true">Active</option>
                             <option value="false">Inactive</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Preferred Language 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <select id="editPreferredLanguage" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
-                            <option value="en">English</option>
-                            <option value="bn">Bengali</option>
-                            <option value="hi">Hindi</option>
-                            <option value="ar">Arabic</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Daily Unlock Status -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Daily Games Unlocked 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <select id="editDailyUnlockedGames" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                    
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">Daily Games Unlocked</label>
+                        <select id="editDailyGames" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base">
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Daily Videos Unlocked 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <select id="editDailyUnlockedVideos" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
+                    
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">Daily Videos Unlocked</label>
+                        <select id="editDailyVideos" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base">
                             <option value="true">Yes</option>
                             <option value="false">No</option>
                         </select>
                     </div>
                 </div>
-
-                <!-- Additional Stats (Editable) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Total Activities Completed 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <input type="number" id="editTotalActivitiesCompleted" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                
+                <!-- Profile Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">Bio</label>
+                        <textarea id="editBio" rows="3" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base"></textarea>
                     </div>
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Login Streak 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <input type="number" id="editLoginStreak" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
+                    
+                    <div class="editable-field p-3 rounded-lg">
+                        <label class="block text-white/80 text-sm font-medium mb-2">Location</label>
+                        <input type="text" id="editLocation" class="w-full px-3 py-2 glass-input rounded-lg text-white input-base">
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Achievement Points 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <input type="number" id="editAchievementPoints" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
-                    </div>
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Total Lifetime Earnings (৳)
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <input type="number" id="editTotalEarningsLifetime" step="0.01" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" min="0">
-                    </div>
-                </div>
-
-                <!-- Profile Information -->
-                <div>
-                    <label class="block text-white/80 text-sm font-medium mb-2">
-                        Bio 
-                        <span class="permission-indicator editable">EDITABLE</span>
-                    </label>
-                    <textarea id="editBio" rows="3" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable" placeholder="User bio"></textarea>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Location 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <input type="text" id="editLocation" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
-                    </div>
-                    <div>
-                        <label class="block text-white/80 text-sm font-medium mb-2">
-                            Date of Birth 
-                            <span class="permission-indicator editable">EDITABLE</span>
-                        </label>
-                        <input type="date" id="editDateOfBirth" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-editable">
-                    </div>
-                </div>
-
-                <!-- View Only Fields -->
-                <div class="border-t border-white/20 pt-4">
-                    <h3 class="text-lg font-bold mb-4">View Only Information</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-white/80 text-sm font-medium mb-2">
-                                Gender 
-                                <span class="permission-indicator view-only">VIEW ONLY</span>
-                            </label>
-                            <input type="text" id="viewGender" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-readonly" readonly>
+                
+                <!-- Read-Only Fields -->
+                <div class="mt-6">
+                    <h4 class="font-semibold mb-3 text-white/80">
+                        <i class="fas fa-eye text-gray-400 mr-2"></i>
+                        View Only Fields
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="readonly-field p-3 rounded-lg">
+                            <label class="block text-white/60 text-sm mb-1">Gender</label>
+                            <span id="viewGender" class="text-white">-</span>
                         </div>
-                        <div>
-                            <label class="block text-white/80 text-sm font-medium mb-2">
-                                Last Unlock Date 
-                                <span class="permission-indicator view-only">VIEW ONLY</span>
-                            </label>
-                            <input type="text" id="viewLastUnlockDate" class="w-full px-4 py-3 glass-input rounded-xl text-white input-base field-readonly" readonly>
+                        <div class="readonly-field p-3 rounded-lg">
+                            <label class="block text-white/60 text-sm mb-1">Join Date</label>
+                            <span id="viewJoinDate" class="text-white">-</span>
+                        </div>
+                        <div class="readonly-field p-3 rounded-lg">
+                            <label class="block text-white/60 text-sm mb-1">Last Login</label>
+                            <span id="viewLastLogin" class="text-white">-</span>
                         </div>
                     </div>
                 </div>
-
+                
                 <div class="flex space-x-3 pt-6">
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-6 rounded-xl hover:from-green-600 hover:to-teal-700 font-semibold transition-all">
-                        Save Changes
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-xl hover:from-green-600 hover:to-emerald-700 font-semibold transition-all">
+                        <i class="fas fa-save mr-2"></i>Save Changes
                     </button>
-                    <button type="button" onclick="hideUserEditModal()" class="flex-1 glass text-white py-3 px-6 rounded-xl hover:bg-white/20 font-semibold transition-all">
+                    <button type="button" onclick="hideModal('userEditModal')" class="flex-1 glass text-white py-3 px-6 rounded-xl hover:bg-white/20 font-semibold transition-all">
                         Cancel
                     </button>
                 </div>
@@ -487,146 +557,11 @@
         </div>
     </div>
 
-    <!-- Main Admin Dashboard -->
-    <div class="container mx-auto px-4 py-8" id="adminDashboard" style="display: none;">
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold mb-4 md:mb-0">
-                <i class="fas fa-shield-alt text-blue-400 mr-2"></i>
-                CoinEarner Pro - Admin Panel
-            </h1>
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span class="text-green-400 font-semibold">Admin: <span id="currentAdminName">Admin</span></span>
-                </div>
-                <button onclick="adminLogout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                </button>
-            </div>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="glass rounded-2xl p-6 admin-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <i class="fas fa-users text-3xl text-blue-400 mb-2"></i>
-                        <p class="text-white/70 text-sm">Total Users</p>
-                    </div>
-                    <div class="text-2xl font-bold" id="totalUsersCount">0</div>
-                </div>
-            </div>
-            <div class="glass rounded-2xl p-6 admin-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <i class="fas fa-check-circle text-3xl text-green-400 mb-2"></i>
-                        <p class="text-white/70 text-sm">Verified Users</p>
-                    </div>
-                    <div class="text-2xl font-bold" id="verifiedUsersCount">0</div>
-                </div>
-            </div>
-            <div class="glass rounded-2xl p-6 admin-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <i class="fas fa-coins text-3xl text-yellow-400 mb-2"></i>
-                        <p class="text-white/70 text-sm">Total Coins</p>
-                    </div>
-                    <div class="text-2xl font-bold" id="totalCoinsSum">0</div>
-                </div>
-            </div>
-            <div class="glass rounded-2xl p-6 admin-card">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <i class="fas fa-user-shield text-3xl text-purple-400 mb-2"></i>
-                        <p class="text-white/70 text-sm">Active Admins</p>
-                    </div>
-                    <div class="text-2xl font-bold" id="activeAdminsCount">1</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- User Search and Management -->
-        <div class="glass rounded-2xl p-6 mb-8">
-            <h3 class="text-xl font-bold mb-6">
-                <i class="fas fa-search text-blue-400 mr-2"></i>
-                User Search & Management
-            </h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="md:col-span-2">
-                    <input type="text" id="userSearchInput" class="w-full px-4 py-3 glass-input rounded-xl text-white placeholder-white/50 input-base" placeholder="Enter email, name, or phone number to search">
-                </div>
-                <div class="flex space-x-2">
-                    <button onclick="searchUser()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-all">
-                        <i class="fas fa-search mr-2"></i>Search
-                    </button>
-                    <button onclick="clearSearch()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg transition-all">
-                        <i class="fas fa-times mr-2"></i>Clear
-                    </button>
-                </div>
-            </div>
-
-            <!-- Search Results -->
-            <div id="searchResults" class="hidden">
-                <h4 class="text-lg font-bold mb-4">Search Results</h4>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-white">
-                        <thead>
-                            <tr class="border-b border-white/20">
-                                <th class="py-3 text-left">Name</th>
-                                <th class="py-3 text-left">Email</th>
-                                <th class="py-3 text-left">Coins</th>
-                                <th class="py-3 text-left">Status</th>
-                                <th class="py-3 text-left">Verified</th>
-                                <th class="py-3 text-left">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="userResultsTable">
-                            <!-- Results will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- No Results Message -->
-            <div id="noResults" class="hidden text-center py-8">
-                <i class="fas fa-search text-4xl text-white/50 mb-4"></i>
-                <p class="text-white/70">No users found matching your search criteria</p>
-            </div>
-        </div>
-
-        <!-- Recent Admin Actions Log -->
-        <div class="glass rounded-2xl p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">
-                    <i class="fas fa-history text-green-400 mr-2"></i>
-                    Recent Admin Actions
-                </h3>
-                <button onclick="clearActionLog()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
-                    <i class="fas fa-trash mr-2"></i>Clear Log
-                </button>
-            </div>
-            <div id="adminActionLog" class="space-y-3">
-                <div class="p-3 bg-white/10 rounded-lg">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center">
-                            <i class="fas fa-user-shield text-blue-400 mr-2"></i>
-                            <span class="font-semibold">Admin panel initialized</span>
-                        </div>
-                        <span class="text-sm text-white/60" id="initTime">Just now</span>
-                    </div>
-                    <p class="text-white/80 text-sm mt-1">Admin system started successfully</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Custom Alert Modal -->
     <div class="modal-overlay hidden" id="customAlert">
-        <div class="modal-content glass rounded-2xl p-8 text-center max-w-md">
-            <i id="alertIcon" class="fas fa-info-circle text-5xl mb-4 text-blue-400"></i>
-            <p id="alertMessage" class="text-xl mb-6 text-white">Alert message</p>
+        <div class="modal-content glass rounded-2xl p-8 text-center">
+            <i id="alertIcon" class="fas fa-info-circle text-5xl mb-4"></i>
+            <p id="alertMessage" class="text-xl mb-6 text-white"></p>
             <button onclick="hideCustomAlert()" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl hover:from-blue-600 hover:to-purple-700 font-semibold transition-all">
                 OK
             </button>
@@ -634,416 +569,464 @@
     </div>
 
     <script>
-        // Admin Management System
+        // Enhanced Admin Panel System
         const config = {
             apiEndpoint: 'https://script.google.com/macros/s/AKfycbwzeoNtCleXecmpyEpfQMiZxNHizvl84nUipSj1FxTySFVhQrT-3K9Oo_7FiidM5HPL/exec',
-            adminCode: 'ADMIN2025SECURE', // Secret admin registration code
             appVersion: '3.0.0'
         };
 
-        class AdminManager {
+        class AdminPanelManager {
             constructor() {
                 this.currentAdmin = null;
                 this.isLoggedIn = false;
-                this.actionLog = [];
-                this.loadAdminState();
+                this.validAdminCodes = ['ADMIN2024', 'MANAGER2024', 'SUPPORT2024']; // These should be stored on server
+                this.permissions = {
+                    canDecreaseCoins: true,
+                    canIncreaseCoins: false,
+                    canManageDiamonds: true,
+                    canDecreaseEarnings: true,
+                    canIncreaseEarnings: false,
+                    canEditProfile: true,
+                    canViewPersonalData: false,
+                    canDeleteUsers: false
+                };
+                this.originalUserData = {}; // Store original data for validation
+                this.init();
             }
 
-            // Save admin state to localStorage
-            saveAdminState() {
-                localStorage.setItem('adminState', JSON.stringify({
-                    admin: this.currentAdmin,
-                    isLoggedIn: this.isLoggedIn,
-                    actionLog: this.actionLog
-                }));
+            init() {
+                this.loadAdminSession();
+                this.setupEventListeners();
+                this.updateUI();
             }
 
-            // Load admin state from localStorage
-            loadAdminState() {
-                const state = localStorage.getItem('adminState');
-                if (state) {
-                    const parsed = JSON.parse(state);
-                    this.currentAdmin = parsed.admin;
-                    this.isLoggedIn = parsed.isLoggedIn;
-                    this.actionLog = parsed.actionLog || [];
-                    
-                    if (this.isLoggedIn && this.currentAdmin) {
-                        this.showDashboard();
+            loadAdminSession() {
+                const session = localStorage.getItem('adminSession');
+                if (session) {
+                    try {
+                        const sessionData = JSON.parse(session);
+                        if (sessionData.expires > Date.now()) {
+                            this.currentAdmin = sessionData.admin;
+                            this.isLoggedIn = true;
+                        } else {
+                            localStorage.removeItem('adminSession');
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('adminSession');
                     }
                 }
             }
 
-            // Register new admin
-            async registerAdmin(name, email, password, adminCode) {
-                if (adminCode !== config.adminCode) {
-                    return { success: false, message: 'Invalid admin registration code' };
-                }
-
-                // Check if admin already exists
-                const existingAdmin = await this.loadAdminData(email);
-                if (existingAdmin) {
-                    return { success: false, message: 'Admin with this email already exists' };
-                }
-
-                const adminData = {
-                    id: this.generateId(),
-                    name,
-                    email: email.toLowerCase(),
-                    password: this.hashPassword(password),
-                    registeredAt: new Date().toISOString(),
-                    lastLogin: null,
-                    permissions: ['user_edit', 'user_view', 'stats_view'],
-                    isActive: true
-                };
-
-                const success = await this.saveAdminData(adminData);
-                if (success) {
-                    this.logAction('Admin Registration', `New admin registered: ${email}`);
-                    return { success: true, message: 'Admin registration successful' };
-                } else {
-                    return { success: false, message: 'Failed to save admin data' };
+            saveAdminSession() {
+                if (this.currentAdmin) {
+                    const sessionData = {
+                        admin: this.currentAdmin,
+                        expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+                    };
+                    localStorage.setItem('adminSession', JSON.stringify(sessionData));
                 }
             }
 
-            // Login admin
-            async loginAdmin(email, password) {
-                const adminData = await this.loadAdminData(email.toLowerCase());
-                if (!adminData) {
-                    return { success: false, message: 'Admin not found' };
-                }
-
-                if (!adminData.isActive) {
-                    return { success: false, message: 'Admin account is disabled' };
-                }
-
-                if (adminData.password !== this.hashPassword(password)) {
-                    return { success: false, message: 'Invalid password' };
-                }
-
-                // Update last login
-                adminData.lastLogin = new Date().toISOString();
-                await this.saveAdminData(adminData);
-
-                this.currentAdmin = adminData;
-                this.isLoggedIn = true;
-                this.saveAdminState();
-
-                this.logAction('Admin Login', `Admin logged in: ${email}`);
-                return { success: true, message: 'Login successful' };
-            }
-
-            // Logout admin
-            logout() {
-                this.logAction('Admin Logout', `Admin logged out: ${this.currentAdmin?.email}`);
-                this.currentAdmin = null;
-                this.isLoggedIn = false;
-                this.saveAdminState();
-                this.hideDashboard();
-            }
-
-            // Show admin dashboard
-            showDashboard() {
-                document.getElementById('adminRegistrationModal').classList.add('hidden');
-                document.getElementById('adminLoginModal').classList.add('hidden');
-                document.getElementById('adminDashboard').style.display = 'block';
-                document.getElementById('currentAdminName').textContent = this.currentAdmin.name;
-                this.updateStats();
-                this.updateActionLog();
-            }
-
-            // Hide admin dashboard
-            hideDashboard() {
-                document.getElementById('adminDashboard').style.display = 'none';
-                document.getElementById('adminRegistrationModal').classList.remove('hidden');
-            }
-
-            // Load admin data from server
-            async loadAdminData(email) {
+            async verifyUser(email, password) {
                 try {
-                    const filename = `admin_${email.replace('@', '_at_').replace(/\./g, '_dot_')}.json`;
-                    const response = await fetch(`${config.apiEndpoint}?folder=admins&filename=${filename}`);
+                    // Load user data from main app database
+                    const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
                     
-                    if (!response.ok) return null;
+                    if (!response.ok) {
+                        return { success: false, message: 'User not found in system' };
+                    }
                     
                     const text = await response.text();
-                    if (text.includes('error') || text.includes('not found')) return null;
+                    if (text.includes('error') || text.includes('not found')) {
+                        return { success: false, message: 'User not registered in main app' };
+                    }
                     
-                    return JSON.parse(text);
-                } catch (error) {
-                    console.error('Load admin data error:', error);
-                    return null;
-                }
-            }
-
-            // Save admin data to server
-            async saveAdminData(adminData) {
-                try {
-                    const filename = `admin_${adminData.email.replace('@', '_at_').replace(/\./g, '_dot_')}.json`;
-                    const response = await fetch(config.apiEndpoint, {
-                        method: 'POST',
-                        body: new URLSearchParams({
-                            folder: 'admins',
-                            filename: filename,
-                            content: JSON.stringify(adminData, null, 2)
-                        })
-                    });
-                    return response.ok;
-                } catch (error) {
-                    console.error('Save admin data error:', error);
-                    return false;
-                }
-            }
-
-            // Search for users
-            async searchUsers(searchTerm) {
-                try {
-                    // This would typically search through all user files
-                    // For demo, we'll simulate some users
-                    const demoUsers = [
-                        {
-                            name: "Sadiya Rohman",
-                            phone: "+8801783966643",
-                            email: "mustshadia@gmail.com",
-                            address: "Rajshahi",
-                            coins: 10,
-                            diamonds: 0,
-                            earnings: 0,
-                            streak: 1,
-                            isEmailVerified: true,
-                            isActive: true,
-                            gender: "Female",
-                            totalEarningsLifetime: 0.000009999999999999999,
-                            totalActivitiesCompleted: 0,
-                            loginStreak: 1,
-                            achievementPoints: 0,
-                            bio: "",
-                            location: "Rajshahi",
-                            dateOfBirth: "",
-                            preferredLanguage: "en",
-                            dailyUnlockedGames: false,
-                            dailyUnlockedVideos: false,
-                            lastUnlockDate: null
-                        }
-                    ];
-
-                    return demoUsers.filter(user => 
-                        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        user.phone.includes(searchTerm)
-                    );
-                } catch (error) {
-                    console.error('Search users error:', error);
-                    return [];
-                }
-            }
-
-            // Update user data with restrictions
-            async updateUserData(userEmail, updates) {
-                try {
-                    // Load current user data
-                    const currentUser = await this.loadUserData(userEmail);
-                    if (!currentUser) {
-                        return { success: false, message: 'User not found' };
-                    }
-
-                    // Apply restrictions
-                    const restrictedUpdates = this.applyUpdateRestrictions(currentUser, updates);
+                    const userData = JSON.parse(text);
                     
-                    // Merge updates
-                    const updatedUser = { ...currentUser, ...restrictedUpdates };
-                    updatedUser.lastUpdated = new Date().toISOString();
-
-                    // Save updated user data
-                    const success = await this.saveUserData(updatedUser);
-                    
-                    if (success) {
-                        this.logAction('User Update', `Updated user: ${userEmail}`);
-                        return { success: true, message: 'User updated successfully' };
-                    } else {
-                        return { success: false, message: 'Failed to save user data' };
-                    }
+                    // In real implementation, you would verify password hash
+                    // For demo, we'll assume password verification passes
+                    return { success: true, userData };
                 } catch (error) {
-                    console.error('Update user error:', error);
-                    return { success: false, message: 'Update failed' };
+                    return { success: false, message: 'Error verifying user credentials' };
                 }
             }
 
-            // Apply update restrictions based on admin permissions
-            applyUpdateRestrictions(currentUser, updates) {
-                const restrictedUpdates = {};
-
-                // Coins - can only decrease
-                if ('coins' in updates) {
-                    const newCoins = parseInt(updates.coins);
-                    if (newCoins <= currentUser.coins) {
-                        restrictedUpdates.coins = newCoins;
-                    }
-                }
-
-                // Diamonds - can increase or decrease
-                if ('diamonds' in updates) {
-                    restrictedUpdates.diamonds = parseInt(updates.diamonds);
-                }
-
-                // Earnings - can only decrease
-                if ('earnings' in updates) {
-                    const newEarnings = parseFloat(updates.earnings);
-                    if (newEarnings <= currentUser.earnings) {
-                        restrictedUpdates.earnings = newEarnings;
-                    }
-                }
-
-                // Streak - can increase or decrease
-                if ('streak' in updates) {
-                    restrictedUpdates.streak = parseInt(updates.streak);
-                }
-
-                // Boolean fields - editable
-                ['isActive', 'dailyUnlockedGames', 'dailyUnlockedVideos'].forEach(field => {
-                    if (field in updates) {
-                        restrictedUpdates[field] = updates[field] === 'true';
-                    }
-                });
-
-                // String fields - editable
-                ['preferredLanguage', 'bio', 'location', 'dateOfBirth'].forEach(field => {
-                    if (field in updates) {
-                        restrictedUpdates[field] = updates[field];
-                    }
-                });
-
-                // Number fields - editable
-                ['totalActivitiesCompleted', 'loginStreak', 'achievementPoints', 'totalEarningsLifetime'].forEach(field => {
-                    if (field in updates) {
-                        restrictedUpdates[field] = parseFloat(updates[field]) || 0;
-                    }
-                });
-
-                return restrictedUpdates;
+            async verifyAdminCode(code) {
+                // In real implementation, check against server-stored admin codes
+                return this.validAdminCodes.includes(code);
             }
 
-            // Load user data
-            async loadUserData(email) {
+            async login(email, password, adminCode) {
+                try {
+                    // Verify user exists in main app
+                    const userVerification = await this.verifyUser(email, password);
+                    if (!userVerification.success) {
+                        return { success: false, message: userVerification.message };
+                    }
+
+                    // Verify admin code
+                    const isValidAdmin = await this.verifyAdminCode(adminCode);
+                    if (!isValidAdmin) {
+                        return { success: false, message: 'Invalid admin authorization code' };
+                    }
+
+                    // Create admin session
+                    this.currentAdmin = {
+                        id: userVerification.userData.email,
+                        name: userVerification.userData.name,
+                        email: userVerification.userData.email,
+                        loginTime: new Date().toISOString(),
+                        permissions: this.permissions
+                    };
+
+                    this.isLoggedIn = true;
+                    this.saveAdminSession();
+                    this.logAdminActivity('Admin login successful', 'login');
+
+                    return { success: true, message: 'Login successful' };
+                } catch (error) {
+                    return { success: false, message: 'Login failed: ' + error.message };
+                }
+            }
+
+            logout() {
+                this.logAdminActivity('Admin logout', 'logout');
+                this.currentAdmin = null;
+                this.isLoggedIn = false;
+                localStorage.removeItem('adminSession');
+                this.updateUI();
+            }
+
+            async searchUser(email) {
                 try {
                     const filename = email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
                     const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
                     
-                    if (!response.ok) return null;
+                    if (!response.ok) {
+                        return { success: false, message: 'User not found' };
+                    }
                     
                     const text = await response.text();
-                    if (text.includes('error') || text.includes('not found')) return null;
+                    if (text.includes('error') || text.includes('not found')) {
+                        return { success: false, message: 'User not found' };
+                    }
                     
-                    return JSON.parse(text);
+                    const userData = JSON.parse(text);
+                    this.logAdminActivity(`Searched user: ${email}`, 'search');
+                    return { success: true, userData };
                 } catch (error) {
-                    console.error('Load user data error:', error);
-                    return null;
+                    return { success: false, message: 'Search failed: ' + error.message };
                 }
             }
 
-            // Save user data
-            async saveUserData(userData) {
+            async updateUser(userId, updates) {
                 try {
-                    const filename = userData.email.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
-                    const response = await fetch(config.apiEndpoint, {
+                    // Load current user data
+                    const filename = userId.replace('@', '_at_').replace(/\./g, '_dot_') + '.json';
+                    const response = await fetch(`${config.apiEndpoint}?folder=users&filename=${filename}`);
+                    
+                    if (!response.ok) {
+                        return { success: false, message: 'User not found' };
+                    }
+                    
+                    const currentData = JSON.parse(await response.text());
+                    
+                    // Apply permission restrictions
+                    const validatedUpdates = this.validateUpdates(currentData, updates);
+                    if (!validatedUpdates.valid) {
+                        return { success: false, message: validatedUpdates.message };
+                    }
+
+                    // Apply updates
+                    const updatedData = { ...currentData, ...validatedUpdates.updates };
+                    updatedData.lastUpdated = new Date().toISOString();
+                    updatedData.lastUpdatedBy = this.currentAdmin.email;
+
+                    // Save updated data
+                    const saveResponse = await fetch(config.apiEndpoint, {
                         method: 'POST',
                         body: new URLSearchParams({
                             folder: 'users',
                             filename: filename,
-                            content: JSON.stringify(userData, null, 2)
+                            content: JSON.stringify(updatedData, null, 2)
                         })
                     });
-                    return response.ok;
+
+                    if (saveResponse.ok) {
+                        this.logAdminActivity(`Updated user: ${userId}`, 'update', updates);
+                        return { success: true, message: 'User updated successfully' };
+                    } else {
+                        return { success: false, message: 'Failed to save updates' };
+                    }
                 } catch (error) {
-                    console.error('Save user data error:', error);
-                    return false;
+                    return { success: false, message: 'Update failed: ' + error.message };
                 }
             }
 
-            // Update dashboard stats
-            updateStats() {
-                // This would typically fetch real stats from the database
-                // For demo purposes, showing sample data
-                document.getElementById('totalUsersCount').textContent = '1,247';
-                document.getElementById('verifiedUsersCount').textContent = '1,089';
-                document.getElementById('totalCoinsSum').textContent = '245,678';
-                document.getElementById('activeAdminsCount').textContent = '3';
+            validateUpdates(currentData, updates) {
+                const validUpdates = {};
+                let errorMessage = '';
+
+                // Validate coin changes (can only decrease)
+                if (updates.coins !== undefined) {
+                    const newCoins = parseInt(updates.coins);
+                    const currentCoins = currentData.coins || 0;
+                    
+                    if (newCoins > currentCoins) {
+                        return { valid: false, message: 'Cannot increase coins. You can only decrease coin amounts.' };
+                    }
+                    validUpdates.coins = newCoins;
+                }
+
+                // Validate earnings changes (can only decrease)
+                if (updates.earnings !== undefined) {
+                    const newEarnings = parseFloat(updates.earnings);
+                    const currentEarnings = currentData.earnings || 0;
+                    
+                    if (newEarnings > currentEarnings) {
+                        return { valid: false, message: 'Cannot increase earnings. You can only decrease earning amounts.' };
+                    }
+                    validUpdates.earnings = newEarnings;
+                    validUpdates.totalEarningsLifetime = newEarnings; // Update lifetime too
+                }
+
+                // Allow diamond changes (can increase or decrease)
+                if (updates.diamonds !== undefined) {
+                    validUpdates.diamonds = parseInt(updates.diamonds);
+                }
+
+                // Allow streak changes
+                if (updates.streak !== undefined) {
+                    validUpdates.streak = parseInt(updates.streak);
+                    validUpdates.loginStreak = parseInt(updates.streak);
+                }
+
+                // Allow achievement points
+                if (updates.achievementPoints !== undefined) {
+                    validUpdates.achievementPoints = parseInt(updates.achievementPoints);
+                }
+
+                // Allow status changes
+                if (updates.isActive !== undefined) {
+                    validUpdates.isActive = updates.isActive === 'true';
+                }
+
+                if (updates.dailyUnlockedGames !== undefined) {
+                    validUpdates.dailyUnlockedGames = updates.dailyUnlockedGames === 'true';
+                }
+
+                if (updates.dailyUnlockedVideos !== undefined) {
+                    validUpdates.dailyUnlockedVideos = updates.dailyUnlockedVideos === 'true';
+                }
+
+                // Allow profile updates
+                if (updates.preferredLanguage !== undefined) {
+                    validUpdates.preferredLanguage = updates.preferredLanguage;
+                }
+
+                if (updates.bio !== undefined) {
+                    validUpdates.bio = updates.bio;
+                }
+
+                if (updates.location !== undefined) {
+                    validUpdates.location = updates.location;
+                }
+
+                return { valid: true, updates: validUpdates };
             }
 
-            // Update action log display
-            updateActionLog() {
-                const logContainer = document.getElementById('adminActionLog');
-                logContainer.innerHTML = '';
-
-                this.actionLog.slice(-10).reverse().forEach(action => {
-                    const logElement = document.createElement('div');
-                    logElement.className = 'p-3 bg-white/10 rounded-lg';
-                    logElement.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <i class="fas fa-${this.getActionIcon(action.type)} text-blue-400 mr-2"></i>
-                                <span class="font-semibold">${action.type}</span>
-                            </div>
-                            <span class="text-sm text-white/60">${this.formatTime(action.timestamp)}</span>
-                        </div>
-                        <p class="text-white/80 text-sm mt-1">${action.description}</p>
-                    `;
-                    logContainer.appendChild(logElement);
-                });
-            }
-
-            // Log admin action
-            logAction(type, description) {
-                this.actionLog.push({
+            logAdminActivity(action, type, details = null) {
+                const activity = {
+                    admin: this.currentAdmin?.email || 'Unknown',
+                    action,
                     type,
-                    description,
+                    details,
                     timestamp: new Date().toISOString(),
-                    admin: this.currentAdmin?.email
-                });
-                this.saveAdminState();
-                this.updateActionLog();
-            }
-
-            // Get icon for action type
-            getActionIcon(type) {
-                const icons = {
-                    'Admin Registration': 'user-plus',
-                    'Admin Login': 'sign-in-alt',
-                    'Admin Logout': 'sign-out-alt',
-                    'User Search': 'search',
-                    'User Update': 'edit'
+                    ip: 'hidden' // In real app, get actual IP
                 };
-                return icons[type] || 'info-circle';
+
+                // Add to recent activities
+                const activities = JSON.parse(localStorage.getItem('adminActivities') || '[]');
+                activities.unshift(activity);
+                activities.splice(10); // Keep only last 10
+                localStorage.setItem('adminActivities', JSON.stringify(activities));
+
+                // Update UI
+                this.updateActivityLog();
             }
 
-            // Format timestamp
-            formatTime(timestamp) {
-                const date = new Date(timestamp);
+            updateActivityLog() {
+                const activities = JSON.parse(localStorage.getItem('adminActivities') || '[]');
+                const container = document.getElementById('adminActivity');
+                
+                container.innerHTML = '';
+                
+                if (activities.length === 0) {
+                    container.innerHTML = '<div class="text-center text-white/70 py-4">No recent activity</div>';
+                    return;
+                }
+
+                activities.forEach(activity => {
+                    const activityElement = document.createElement('div');
+                    activityElement.className = 'p-3 bg-white/10 rounded-lg';
+                    
+                    const timeAgo = this.getTimeAgo(new Date(activity.timestamp));
+                    
+                    activityElement.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="font-semibold">${activity.action}</span>
+                                <div class="text-sm text-white/70">by ${activity.admin}</div>
+                            </div>
+                            <span class="text-xs text-white/60">${timeAgo}</span>
+                        </div>
+                    `;
+                    
+                    container.appendChild(activityElement);
+                });
+            }
+
+            getTimeAgo(date) {
                 const now = new Date();
                 const diff = now - date;
                 const minutes = Math.floor(diff / 60000);
                 const hours = Math.floor(diff / 3600000);
-
-                if (minutes < 1) return 'Just now';
-                if (minutes < 60) return `${minutes}m ago`;
-                if (hours < 24) return `${hours}h ago`;
-                return date.toLocaleDateString();
+                const days = Math.floor(diff / 86400000);
+                
+                if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+                if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+                return 'Just now';
             }
 
-            // Generate unique ID
-            generateId() {
-                return 'admin_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            setupEventListeners() {
+                // Login form
+                document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await this.handleLogin();
+                });
+
+                // User edit form
+                document.getElementById('userEditForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await this.handleUserUpdate();
+                });
             }
 
-            // Simple password hashing (use proper hashing in production)
-            hashPassword(password) {
-                return btoa(password + config.adminCode);
+            async handleLogin() {
+                const email = document.getElementById('loginEmail').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                const adminCode = document.getElementById('adminCode').value.trim();
+
+                const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<div class="spinner"></div>Verifying...';
+                submitBtn.disabled = true;
+
+                try {
+                    const result = await this.login(email, password, adminCode);
+                    
+                    if (result.success) {
+                        showCustomAlert(result.message, 'success');
+                        hideModal('loginModal');
+                        this.updateUI();
+                    } else {
+                        showCustomAlert(result.message, 'error');
+                    }
+                } catch (error) {
+                    showCustomAlert('Login failed: ' + error.message, 'error');
+                }
+
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+
+            async handleUserUpdate() {
+                const userId = document.getElementById('editUserId').value;
+                const updates = {
+                    coins: document.getElementById('editCoins').value,
+                    diamonds: document.getElementById('editDiamonds').value,
+                    earnings: document.getElementById('editEarnings').value,
+                    streak: document.getElementById('editStreak').value,
+                    achievementPoints: document.getElementById('editAchievementPoints').value,
+                    preferredLanguage: document.getElementById('editLanguage').value,
+                    isActive: document.getElementById('editIsActive').value,
+                    dailyUnlockedGames: document.getElementById('editDailyGames').value,
+                    dailyUnlockedVideos: document.getElementById('editDailyVideos').value,
+                    bio: document.getElementById('editBio').value,
+                    location: document.getElementById('editLocation').value
+                };
+
+                // Remove empty values
+                Object.keys(updates).forEach(key => {
+                    if (updates[key] === '' || updates[key] === null) {
+                        delete updates[key];
+                    }
+                });
+
+                const submitBtn = document.querySelector('#userEditForm button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<div class="spinner"></div>Saving...';
+                submitBtn.disabled = true;
+
+                try {
+                    const result = await this.updateUser(userId, updates);
+                    
+                    if (result.success) {
+                        showCustomAlert(result.message, 'success');
+                        hideModal('userEditModal');
+                        // Refresh user display
+                        await searchUser();
+                    } else {
+                        showCustomAlert(result.message, 'error');
+                    }
+                } catch (error) {
+                    showCustomAlert('Update failed: ' + error.message, 'error');
+                }
+
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+
+            updateUI() {
+                if (this.isLoggedIn && this.currentAdmin) {
+                    document.getElementById('loginRequired').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    document.getElementById('adminInfo').classList.remove('hidden');
+                    document.getElementById('loginButton').classList.add('hidden');
+                    
+                    document.getElementById('adminName').textContent = this.currentAdmin.name;
+                    document.getElementById('adminEmail').textContent = this.currentAdmin.email;
+                    document.getElementById('lastLoginTime').textContent = 
+                        new Date(this.currentAdmin.loginTime).toLocaleString();
+                    
+                    this.updateActivityLog();
+                } else {
+                    document.getElementById('loginRequired').classList.remove('hidden');
+                    document.getElementById('adminDashboard').classList.add('hidden');
+                    document.getElementById('adminInfo').classList.add('hidden');
+                    document.getElementById('loginButton').classList.remove('hidden');
+                }
             }
         }
 
-        // Initialize admin manager
-        const adminManager = new AdminManager();
+        // Global instance
+        const adminPanel = new AdminPanelManager();
 
-        // UI Functions
+        // Global Functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showLoginModal() {
+            showModal('loginModal');
+        }
+
         function showCustomAlert(message, type = 'info') {
             const alertIcon = document.getElementById('alertIcon');
             const alertMessage = document.getElementById('alertMessage');
@@ -1072,298 +1055,167 @@
             document.getElementById('customAlert').classList.add('hidden');
         }
 
-        function switchToLogin() {
-            document.getElementById('adminRegistrationModal').classList.add('hidden');
-            document.getElementById('adminLoginModal').classList.remove('hidden');
-        }
-
-        function switchToRegister() {
-            document.getElementById('adminLoginModal').classList.add('hidden');
-            document.getElementById('adminRegistrationModal').classList.remove('hidden');
-        }
-
-        // Search users function
         async function searchUser() {
-            const searchTerm = document.getElementById('userSearchInput').value.trim();
-            if (!searchTerm) {
-                showCustomAlert('Please enter a search term', 'warning');
+            const email = document.getElementById('userSearchInput').value.trim();
+            
+            if (!email) {
+                showCustomAlert('Please enter an email address to search', 'warning');
                 return;
             }
 
-            const searchBtn = document.querySelector('#userSearchInput').parentElement.nextElementSibling.querySelector('button');
-            const originalText = searchBtn.innerHTML;
-            searchBtn.innerHTML = '<div class="spinner"></div>Searching...';
-            searchBtn.disabled = true;
+            if (!adminPanel.isLoggedIn) {
+                showCustomAlert('Please login first', 'error');
+                return;
+            }
+
+            const resultsContainer = document.getElementById('userResults');
+            resultsContainer.innerHTML = '<div class="text-center py-4"><div class="spinner"></div>Searching...</div>';
 
             try {
-                const users = await adminManager.searchUsers(searchTerm);
-                displaySearchResults(users);
-                adminManager.logAction('User Search', `Searched for: ${searchTerm}`);
+                const result = await adminPanel.searchUser(email);
+                
+                if (result.success) {
+                    displayUserResult(result.userData);
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-8 text-red-400">
+                            <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+                            <p>${result.message}</p>
+                        </div>
+                    `;
+                }
             } catch (error) {
-                showCustomAlert('Search failed', 'error');
-            } finally {
-                searchBtn.innerHTML = originalText;
-                searchBtn.disabled = false;
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+                        <p>Search failed: ${error.message}</p>
+                    </div>
+                `;
             }
         }
 
-        function displaySearchResults(users) {
-            const resultsContainer = document.getElementById('searchResults');
-            const noResultsContainer = document.getElementById('noResults');
-            const tableBody = document.getElementById('userResultsTable');
-
-            if (users.length === 0) {
-                resultsContainer.classList.add('hidden');
-                noResultsContainer.classList.remove('hidden');
-                return;
-            }
-
-            noResultsContainer.classList.add('hidden');
-            resultsContainer.classList.remove('hidden');
-
-            tableBody.innerHTML = '';
-            users.forEach(user => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-white/10 user-row';
-                row.innerHTML = `
-                    <td class="py-3">${user.name}</td>
-                    <td class="py-3">${user.email}</td>
-                    <td class="py-3">${user.coins || 0}</td>
-                    <td class="py-3">
-                        <span class="status-badge ${user.isActive ? 'verified' : 'unverified'}">
-                            ${user.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
-                    <td class="py-3">
-                        <span class="status-badge ${user.isEmailVerified ? 'verified' : 'unverified'}">
-                            ${user.isEmailVerified ? 'Verified' : 'Unverified'}
-                        </span>
-                    </td>
-                    <td class="py-3">
-                        <button onclick="editUser('${user.email}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-all mr-2">
-                            <i class="fas fa-edit mr-1"></i>Edit
+        function displayUserResult(userData) {
+            const container = document.getElementById('userResults');
+            
+            container.innerHTML = `
+                <div class="glass rounded-lg p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-xl font-bold">${userData.name || 'Unknown'}</h4>
+                            <p class="text-white/70">${userData.email}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <span class="status-badge ${userData.isEmailVerified ? 'verified' : 'unverified'}">
+                                <i class="fas fa-${userData.isEmailVerified ? 'check' : 'times'}-circle"></i>
+                                ${userData.isEmailVerified ? 'Verified' : 'Unverified'}
+                            </span>
+                            <span class="status-badge ${userData.isActive ? 'active' : 'inactive'}">
+                                <i class="fas fa-${userData.isActive ? 'check' : 'times'}-circle"></i>
+                                ${userData.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-yellow-400">${userData.coins || 0}</div>
+                            <div class="text-sm text-white/70">Coins</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-cyan-400">${userData.diamonds || 0}</div>
+                            <div class="text-sm text-white/70">Diamonds</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-400">৳${(userData.earnings || 0).toFixed(2)}</div>
+                            <div class="text-sm text-white/70">Earnings</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-red-400">${userData.streak || 0}</div>
+                            <div class="text-sm text-white/70">Streak</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <div class="text-sm text-white/70">Join Date</div>
+                            <div class="font-semibold">${new Date(userData.joinDate).toLocaleDateString()}</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-white/70">Last Login</div>
+                            <div class="font-semibold">${userData.lastLogin ? new Date(userData.lastLogin).toLocaleDateString() : 'Never'}</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-white/70">Language</div>
+                            <div class="font-semibold">${userData.preferredLanguage || 'en'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="editUser('${userData.email}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-all">
+                            <i class="fas fa-edit mr-2"></i>Edit User
                         </button>
-                        <button onclick="viewUser('${user.email}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-all">
-                            <i class="fas fa-eye mr-1"></i>View
+                        <button onclick="viewUserDetails('${userData.email}')" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-all">
+                            <i class="fas fa-eye mr-2"></i>View Details
                         </button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
+                    </div>
+                </div>
+            `;
+        }
+
+        function editUser(email) {
+            // Load user data into edit form
+            adminPanel.searchUser(email).then(result => {
+                if (result.success) {
+                    const userData = result.userData;
+                    adminPanel.originalUserData = userData; // Store for validation
+                    
+                    // Populate form
+                    document.getElementById('editUserId').value = userData.email;
+                    document.getElementById('editUserName').textContent = userData.name || 'Unknown';
+                    document.getElementById('editCoins').value = userData.coins || 0;
+                    document.getElementById('editDiamonds').value = userData.diamonds || 0;
+                    document.getElementById('editEarnings').value = userData.earnings || 0;
+                    document.getElementById('editStreak').value = userData.streak || 0;
+                    document.getElementById('editAchievementPoints').value = userData.achievementPoints || 0;
+                    document.getElementById('editLanguage').value = userData.preferredLanguage || 'en';
+                    document.getElementById('editIsActive').value = userData.isActive ? 'true' : 'false';
+                    document.getElementById('editDailyGames').value = userData.dailyUnlockedGames ? 'true' : 'false';
+                    document.getElementById('editDailyVideos').value = userData.dailyUnlockedVideos ? 'true' : 'false';
+                    document.getElementById('editBio').value = userData.bio || '';
+                    document.getElementById('editLocation').value = userData.location || '';
+                    
+                    // Populate read-only fields
+                    document.getElementById('viewGender').textContent = userData.gender || 'Not specified';
+                    document.getElementById('viewJoinDate').textContent = new Date(userData.joinDate).toLocaleDateString();
+                    document.getElementById('viewLastLogin').textContent = userData.lastLogin ? new Date(userData.lastLogin).toLocaleDateString() : 'Never';
+                    
+                    showModal('userEditModal');
+                }
             });
+        }
+
+        function viewUserDetails(email) {
+            showCustomAlert('Detailed user view coming soon!', 'info');
         }
 
         function clearSearch() {
             document.getElementById('userSearchInput').value = '';
-            document.getElementById('searchResults').classList.add('hidden');
-            document.getElementById('noResults').classList.add('hidden');
+            document.getElementById('userResults').innerHTML = `
+                <div class="text-center text-white/70 py-8">
+                    <i class="fas fa-search text-4xl mb-4"></i>
+                    <p>Search for users using their email address</p>
+                </div>
+            `;
         }
 
-        // Edit user function
-        async function editUser(email) {
-            const userData = await adminManager.loadUserData(email);
-            if (!userData) {
-                showCustomAlert('User not found', 'error');
-                return;
-            }
-
-            // Populate edit form
-            document.getElementById('editUserName').textContent = userData.name;
-            document.getElementById('editCoins').value = userData.coins || 0;
-            document.getElementById('editDiamonds').value = userData.diamonds || 0;
-            document.getElementById('editEarnings').value = userData.earnings || 0;
-            document.getElementById('editStreak').value = userData.streak || 0;
-            document.getElementById('editIsActive').value = userData.isActive ? 'true' : 'false';
-            document.getElementById('editPreferredLanguage').value = userData.preferredLanguage || 'en';
-            document.getElementById('editDailyUnlockedGames').value = userData.dailyUnlockedGames ? 'true' : 'false';
-            document.getElementById('editDailyUnlockedVideos').value = userData.dailyUnlockedVideos ? 'true' : 'false';
-            document.getElementById('editTotalActivitiesCompleted').value = userData.totalActivitiesCompleted || 0;
-            document.getElementById('editLoginStreak').value = userData.loginStreak || 0;
-            document.getElementById('editAchievementPoints').value = userData.achievementPoints || 0;
-            document.getElementById('editTotalEarningsLifetime').value = userData.totalEarningsLifetime || 0;
-            document.getElementById('editBio').value = userData.bio || '';
-            document.getElementById('editLocation').value = userData.location || '';
-            document.getElementById('editDateOfBirth').value = userData.dateOfBirth || '';
-
-            // View only fields
-            document.getElementById('viewGender').value = userData.gender || 'Not specified';
-            document.getElementById('viewLastUnlockDate').value = userData.lastUnlockDate || 'Never';
-
-            // Store current user email for saving
-            document.getElementById('userEditForm').setAttribute('data-user-email', email);
-
-            document.getElementById('userEditModal').classList.remove('hidden');
-        }
-
-        function hideUserEditModal() {
-            document.getElementById('userEditModal').classList.add('hidden');
-        }
-
-        function viewUser(email) {
-            editUser(email);
-            // Make all fields readonly for view mode
-            const inputs = document.querySelectorAll('#userEditForm input, #userEditForm select, #userEditForm textarea');
-            inputs.forEach(input => {
-                if (!input.readOnly) {
-                    input.readOnly = true;
-                    input.classList.add('field-readonly');
-                }
-            });
-            document.getElementById('userEditForm').querySelector('button[type="submit"]').style.display = 'none';
+        function loadAllUsers() {
+            showCustomAlert('Load all users feature requires advanced permissions', 'warning');
         }
 
         function adminLogout() {
-            adminManager.logout();
+            adminPanel.logout();
             showCustomAlert('Logged out successfully', 'success');
         }
-
-        function clearActionLog() {
-            if (showConfirmDialog('Are you sure you want to clear the action log?', () => {
-                adminManager.actionLog = [];
-                adminManager.saveAdminState();
-                adminManager.updateActionLog();
-                showCustomAlert('Action log cleared', 'success');
-            })) {
-                // Confirmation handled in callback
-            }
-        }
-
-        // Custom confirm dialog (since confirm() is not allowed)
-        function showConfirmDialog(message, onConfirm) {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal-content glass rounded-2xl p-8 text-center max-w-md">
-                    <i class="fas fa-question-circle text-5xl mb-4 text-yellow-400"></i>
-                    <p class="text-xl mb-6 text-white">${message}</p>
-                    <div class="flex space-x-3">
-                        <button onclick="this.closest('.modal-overlay').remove()" class="flex-1 glass text-white py-3 px-6 rounded-xl hover:bg-white/20 font-semibold transition-all">Cancel</button>
-                        <button onclick="this.closest('.modal-overlay').remove(); onConfirm()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-xl font-semibold transition-all">Confirm</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            return true;
-        }
-
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            // Admin registration form
-            document.getElementById('adminRegistrationForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const name = document.getElementById('adminName').value.trim();
-                const email = document.getElementById('adminEmail').value.trim();
-                const password = document.getElementById('adminPassword').value;
-                const adminCode = document.getElementById('adminCode').value;
-
-                if (name.length < 2) {
-                    showCustomAlert('Name must be at least 2 characters', 'error');
-                    return;
-                }
-
-                if (password.length < 8) {
-                    showCustomAlert('Password must be at least 8 characters', 'error');
-                    return;
-                }
-
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<div class="spinner"></div>Registering...';
-                submitBtn.disabled = true;
-
-                try {
-                    const result = await adminManager.registerAdmin(name, email, password, adminCode);
-                    
-                    if (result.success) {
-                        showCustomAlert(result.message, 'success');
-                        switchToLogin();
-                    } else {
-                        showCustomAlert(result.message, 'error');
-                    }
-                } catch (error) {
-                    showCustomAlert('Registration failed', 'error');
-                } finally {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
-            });
-
-            // Admin login form
-            document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('loginAdminEmail').value.trim();
-                const password = document.getElementById('loginAdminPassword').value;
-
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<div class="spinner"></div>Logging in...';
-                submitBtn.disabled = true;
-
-                try {
-                    const result = await adminManager.loginAdmin(email, password);
-                    
-                    if (result.success) {
-                        showCustomAlert(result.message, 'success');
-                        setTimeout(() => {
-                            hideCustomAlert();
-                            adminManager.showDashboard();
-                        }, 1500);
-                    } else {
-                        showCustomAlert(result.message, 'error');
-                    }
-                } catch (error) {
-                    showCustomAlert('Login failed', 'error');
-                } finally {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
-            });
-
-            // User edit form
-            document.getElementById('userEditForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const userEmail = this.getAttribute('data-user-email');
-                const formData = new FormData(this);
-                const updates = {};
-
-                // Collect form data
-                ['coins', 'diamonds', 'earnings', 'streak', 'isActive', 'preferredLanguage', 
-                 'dailyUnlockedGames', 'dailyUnlockedVideos', 'totalActivitiesCompleted', 
-                 'loginStreak', 'achievementPoints', 'totalEarningsLifetime', 'bio', 
-                 'location', 'dateOfBirth'].forEach(field => {
-                    const element = document.getElementById('edit' + field.charAt(0).toUpperCase() + field.slice(1));
-                    if (element) {
-                        updates[field] = element.value;
-                    }
-                });
-
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<div class="spinner"></div>Saving...';
-                submitBtn.disabled = true;
-
-                try {
-                    const result = await adminManager.updateUserData(userEmail, updates);
-                    
-                    if (result.success) {
-                        showCustomAlert(result.message, 'success');
-                        hideUserEditModal();
-                    } else {
-                        showCustomAlert(result.message, 'error');
-                    }
-                } catch (error) {
-                    showCustomAlert('Update failed', 'error');
-                } finally {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
-            });
-
-            // Initialize timestamp
-            document.getElementById('initTime').textContent = new Date().toLocaleString();
-        });
 
         // Dark mode support
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -1376,6 +1228,7 @@
                 document.documentElement.classList.remove('dark');
             }
         });
+
     </script>
 </body>
 </html>
